@@ -657,7 +657,6 @@ function Lib:CreateWindow(cfg)
 	local letter = cfg.Letter or "S"
 	local W, H = IsMobile and 600 or 720, IsMobile and 360 or 460
 	local visible, alive = true, true
-	local mobileOn, mobileSize, mobileList = false, cfg.MobileSize or 60, {}
 	local Window = {}
 
 	local function baseScale() return State.Scale * fit(W, H) end
@@ -743,8 +742,14 @@ function Lib:CreateWindow(cfg)
 	winBtn("x", -42, destroy, true)
 	makeDraggable(top, holder)
 
-	----------------------------------------------------------------- sidebar
-	local tabsFrame = make("Frame", { Size = UDim2.new(0, 150, 1, -132), Position = UDim2.fromOffset(10, 60), BackgroundTransparency = 1, Parent = body })
+	----------------------------------------------------------------- sidebar (scrolling)
+	local tabsFrame = make("ScrollingFrame", {
+		Size = UDim2.new(0, 150, 1, -132), Position = UDim2.fromOffset(10, 60), BackgroundTransparency = 1, BorderSizePixel = 0,
+		ScrollBarThickness = 2, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollingDirection = Enum.ScrollingDirection.Y, ElasticBehavior = Enum.ElasticBehavior.Never, Parent = body,
+	})
+	bind(tabsFrame, "ScrollBarImageColor3", "Accent")
+	make("UIPadding", { PaddingRight = UDim.new(0, 6), Parent = tabsFrame })
 	make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tabsFrame })
 
 	local pcard = make("Frame", { Size = UDim2.fromOffset(150, 52), Position = UDim2.new(0, 10, 1, -62), BorderSizePixel = 0, Parent = body })
@@ -856,98 +861,10 @@ function Lib:CreateWindow(cfg)
 		if not lDrag.moved() and not visible then setVisible(true) end
 	end)
 
-	----------------------------------------------------------------- mobile shortcut buttons
-	local mobileHolder = make("Frame", { Name = "MobileButtons", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 4, Parent = gui })
-
-	function Window:AddMobileButton(o)
-		local idx = #mobileList + 1
-		local size = mobileSize
-		local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 400)
-		local gap = 12
-		local perCol = math.max(1, math.floor((vp.Y - 90) / (size + gap)))
-		local col, row = (idx - 1) // perCol, (idx - 1) % perCol
-		local toggle = o.Toggle ~= false
-		local state = false
-
-		local btn = make("TextButton", {
-			Name = "MB_" .. o.Name, Size = UDim2.fromOffset(size, size),
-			Position = UDim2.new(1, -(size + 16) - col * (size + gap), 0, 70 + row * (size + gap)),
-			Text = "", AutoButtonColor = false, BorderSizePixel = 0, Parent = mobileHolder,
-		})
-		round(btn, 14)
-		local stroke = outline(btn, "Accent", 1.5)
-		stroke.Transparency = 0.5
-		local pop = make("UIScale", { Parent = btn })
-
-		local icon
-		if o.Icon and tostring(o.Icon):find("rbxassetid") then
-			icon = make("ImageLabel", { Size = UDim2.fromScale(0.46, 0.46), Position = UDim2.fromScale(0.27, 0.12), BackgroundTransparency = 1, Image = o.Icon, Parent = btn })
-			bind(icon, "ImageColor3", "Text")
-		else
-			icon = make("TextLabel", { Size = UDim2.fromScale(0.6, 0.5), Position = UDim2.fromScale(0.2, 0.1), BackgroundTransparency = 1, Text = o.Icon or string.sub(o.Name, 1, 1), Font = BOLD, TextScaled = true, Parent = btn })
-			bind(icon, "TextColor3", "Text")
-		end
-		local nameLbl = make("TextLabel", { Size = UDim2.new(1, -6, 0.24, 0), Position = UDim2.new(0, 3, 0.68, 0), BackgroundTransparency = 1, Text = string.upper(o.Name), Font = BOLD, TextScaled = true, Parent = btn })
-		make("UITextSizeConstraint", { MaxTextSize = 11, MinTextSize = 6, Parent = nameLbl })
-
-		local function paint(t)
-			tween(btn, { BackgroundColor3 = state and C("Accent") or C("Surface"), BackgroundTransparency = state and 0.2 or 0.12 }, t)
-			tween(nameLbl, { TextColor3 = state and onAccent() or C("SubText") }, t)
-			tween(stroke, { Transparency = state and 0 or 0.5 }, t)
-		end
-		reg(paint)
-
-		local obj = {}
-		function obj.Set(v, silent)
-			state = v and true or false
-			paint()
-			if not silent and o.Callback then task.spawn(o.Callback, state) end
-		end
-		function obj.Get() return state end
-
-		local drag = makeDraggable(btn, btn)
-		btn.MouseEnter:Connect(function() tween(pop, { Scale = 1.1 }, BACK) end)
-		btn.MouseLeave:Connect(function() tween(pop, { Scale = 1 }, BACK) end)
-		btn.InputBegan:Connect(function(i) if isPress(i) then tween(pop, { Scale = 0.9 }, FAST) end end)
-		btn.InputEnded:Connect(function(i)
-			if isPress(i) then tween(pop, { Scale = i.UserInputType == Enum.UserInputType.Touch and 1 or 1.1 }, BACK) end
-		end)
-		btn.Activated:Connect(function()
-			if drag.moved() then return end
-			if toggle then
-				obj.Set(not state)
-			else
-				tween(btn, { BackgroundColor3 = C("Accent") })
-				task.delay(0.15, function() if btn.Parent then paint() end end)
-				if o.Callback then task.spawn(o.Callback) end
-			end
-		end)
-
-		table.insert(mobileList, { btn = btn, pop = pop })
-		if mobileOn then
-			pop.Scale = 0
-			tween(pop, { Scale = 1 }, BACK)
-		end
-		return obj
-	end
-
-	function Window:SetMobileButtons(on)
-		mobileOn = on and true or false
-		mobileHolder.Visible = mobileOn
-		if mobileOn then
-			for n, m in ipairs(mobileList) do
-				m.pop.Scale = 0
-				task.delay(n * 0.05, function()
-					if m.btn.Parent then tween(m.pop, { Scale = 1 }, BACK) end
-				end)
-			end
-		end
-	end
-
-	function Window:SetMobileSize(px)
-		mobileSize = px
-		for _, m in ipairs(mobileList) do m.btn.Size = UDim2.fromOffset(px, px) end
-	end
+	----------------------------------------------------------------- mobile buttons removed (stubs)
+	function Window:AddMobileButton() return { Set = function() end, Get = function() return false end } end
+	function Window:SetMobileButtons() end
+	function Window:SetMobileSize() end
 
 	----------------------------------------------------------------- toasts + stats
 	local toasts = make("Frame", { Size = UDim2.new(0, 270, 1, -32), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 16), BackgroundTransparency = 1, ZIndex = 10, Parent = gui })
@@ -1816,10 +1733,6 @@ function Lib:BuildAppearance()
 	fxSec:AddSlider({ Name = "Vignette strength", Min = 0, Max = 100, Default = pct(F.vignetteStrength), Suffix = "%", Callback = function(v) FX.Set("vignetteStrength", v / 100) end })
 	fxSec:AddSlider({ Name = "Fade time", Min = 10, Max = 150, Default = pct(F.fade), Step = 5, Suffix = "%", Callback = function(v) FX.Set("fade", v / 100) end })
 
-	local mobSec = look:AddSection("On-screen Buttons", "Right")
-	mobSec:AddToggle({ Name = "Show shortcut buttons", Desc = "Draggable buttons for every feature", Default = Lib.IsMobile, Callback = function(on) Window:SetMobileButtons(on) end })
-	mobSec:AddSlider({ Name = "Button size", Min = 44, Max = 90, Default = 60, Suffix = "px", Callback = function(v) Window:SetMobileSize(v) end })
-
 	local launcherSec = look:AddSection("Launcher", "Right")
 	local lLetter, lSize = "S", Lib.IsMobile and 60 or 52
 	launcherSec:AddTextbox({ Name = "Letter", Default = "S", Placeholder = "S", MaxLength = 2, Callback = function(t)
@@ -1900,7 +1813,6 @@ local SettingDefaults = {
 
 local function build(def)
 	if Registry.feats[def.Id] then return end
-	local w = Registry.window
 	local sec = sectionFor(def)
 	local saved = Registry.config[def.Id] or {}
 	local h = { Def = def, state = false, values = {}, sync = {} }
@@ -1916,22 +1828,15 @@ local function build(def)
 	if def.Kind == "button" then
 		h.Run = function() run(true) end
 		sec:AddButton({ Name = def.Name, Desc = def.Desc, Callback = h.Run })
-		if def.Mobile ~= false then
-			w:AddMobileButton({ Name = def.Name, Icon = def.Icon, Toggle = false, Callback = h.Run })
-		end
 	else
-		local tog, mob
+		local tog
 		local function set(v, from)
 			v = v and true or false
 			run(v)
 			if from ~= "ui" and tog then tog.Set(v, true) end
-			if from ~= "mob" and mob then mob.Set(v, true) end
 			for _, fn in ipairs(h.sync) do fn(v) end
 		end
 		tog = sec:AddToggle({ Name = def.Name, Desc = def.Desc, Callback = function(v) set(v, "ui") end })
-		if def.Mobile ~= false then
-			mob = w:AddMobileButton({ Name = def.Name, Icon = def.Icon, Callback = function(v) set(v, "mob") end })
-		end
 		h.Set = function(v) set(v, "api") end
 	end
 
@@ -1960,7 +1865,7 @@ local function build(def)
 end
 
 -- def = { Id, Name, Apply(on, values, handle), Tab, Section, Side, Desc, Icon,
---         Kind = "toggle" | "button", Mobile = true, Settings = { {Type, Key, ...} } }
+--         Kind = "toggle" | "button", Settings = { {Type, Key, ...} } }
 function Lib:Register(def)
 	assert(def and def.Id and def.Name and def.Apply, "Register needs Id, Name, Apply")
 	if Registry.byId[def.Id] then return Registry.feats[def.Id] end
