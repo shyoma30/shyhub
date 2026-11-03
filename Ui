@@ -1,21 +1,21 @@
--- S Hub UI v2 + FX/HUD :: LocalScript (StarterPlayer > StarterPlayerScripts)
--- Merged: window lib, screen FX engine, stats bar, keybind panel, Appearance tab, demo tabs.
--- Everything below the "DEMO" marker is usage. Delete it and build your own tabs.
-
+--------------------------------------------------------------------------------
+-- S Hub core
+--------------------------------------------------------------------------------
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local TeleportService = game:GetService("TeleportService")
+local Lighting = game:GetService("Lighting")
 local StatsService = game:GetService("Stats")
-local HttpService = game:GetService("HttpService")
+local VirtualUser = game:GetService("VirtualUser")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-local BASE = IsMobile and 0.78 or 0.82 -- global size multiplier, lower = smaller
-local LAUNCHER = IsMobile and 44 or 38
 
 --------------------------------------------------------------------------------
 -- themes
@@ -49,15 +49,15 @@ local State = { Theme = "Aurora", Accent = nil, Rounding = 1, Opacity = 1, Scale
 Lib.UI = {
 	fx = {
 		on = false, menuOnly = true, style = "Spooky Halloween", tint = "Style",
-		opacity = 0.8, density = IsMobile and 0.5 or 1, speed = 1, deco = true, lightning = true,
+		opacity = 0.8, density = 1, speed = 1, deco = true, lightning = true,
 		vignette = true, vignetteStrength = 0.6, fade = 1,
 	},
 	stats = {
-		on = true, logo = true, name = not IsMobile, ping = true, fps = true, players = not IsMobile,
-		quality = true, scale = IsMobile and 0.8 or 0.85, opacity = 1, preset = "Top Center",
+		on = true, logo = true, name = true, ping = true, fps = true, players = true,
+		quality = true, scale = 1, opacity = 1, preset = "Top Center",
 	},
 	keys = {
-		on = not IsMobile, showUnbound = true, maxRows = 8, scale = 0.85, opacity = 1,
+		on = not IsMobile, showUnbound = true, maxRows = 8, scale = 1, opacity = 1,
 		collapsed = false, menu = "",
 	},
 }
@@ -260,12 +260,6 @@ local function fit(w, h)
 	return math.clamp(math.min((vp.X - 24) / w, (vp.Y - 24) / h), 0.4, 1)
 end
 
--- freezes the parent page scroll while a slider / picker is being dragged
-local function lockScroll(inst, on)
-	local sf = inst:FindFirstAncestorOfClass("ScrollingFrame")
-	if sf then sf.ScrollingEnabled = not on end
-end
-
 --------------------------------------------------------------------------------
 -- section elements
 --------------------------------------------------------------------------------
@@ -374,11 +368,10 @@ function Section:AddSlider(o)
 		local a = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
 		obj.Set(min + (max - min) * a)
 	end
-	local hit = make("TextButton", { Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 18), BackgroundTransparency = 1, Text = "", Parent = f })
+	local hit = make("TextButton", { Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 22), BackgroundTransparency = 1, Text = "", Parent = f })
 	hit.InputBegan:Connect(function(i)
 		if isPress(i) then
 			dragging = true
-			lockScroll(f, true)
 			tween(knobScale, { Scale = 1.5 }, BACK)
 			fromX(i.Position.X)
 		end
@@ -389,7 +382,6 @@ function Section:AddSlider(o)
 	connect(UserInputService.InputEnded, function(i)
 		if isPress(i) and dragging then
 			dragging = false
-			lockScroll(f, false)
 			tween(knobScale, { Scale = 1 }, BACK)
 		end
 	end)
@@ -561,14 +553,14 @@ function Section:AddColorPicker(o)
 		h = math.clamp((pos.Y - hue.AbsolutePosition.Y) / hue.AbsoluteSize.Y, 0, 0.999)
 		apply()
 	end
-	sv.InputBegan:Connect(function(i) if isPress(i) then dragSV = true; lockScroll(panel, true); updSV(i.Position) end end)
-	hue.InputBegan:Connect(function(i) if isPress(i) then dragH = true; lockScroll(panel, true); updH(i.Position) end end)
+	sv.InputBegan:Connect(function(i) if isPress(i) then dragSV = true; updSV(i.Position) end end)
+	hue.InputBegan:Connect(function(i) if isPress(i) then dragH = true; updH(i.Position) end end)
 	connect(UserInputService.InputChanged, function(i)
 		if i.UserInputType ~= Enum.UserInputType.MouseMovement and i.UserInputType ~= Enum.UserInputType.Touch then return end
 		if dragSV then updSV(i.Position) elseif dragH then updH(i.Position) end
 	end)
 	connect(UserInputService.InputEnded, function(i)
-		if isPress(i) then dragSV, dragH = false, false; lockScroll(panel, false) end
+		if isPress(i) then dragSV, dragH = false, false end
 	end)
 
 	hit.MouseButton1Click:Connect(function()
@@ -663,12 +655,12 @@ function Lib:CreateWindow(cfg)
 
 	local key = cfg.Key or Enum.KeyCode.RightShift
 	local letter = cfg.Letter or "S"
-	local W, H = IsMobile and 560 or 680, IsMobile and 320 or 430
+	local W, H = IsMobile and 600 or 720, IsMobile and 360 or 460
 	local visible, alive = true, true
-	local mobileOn, mobileSize, mobileList = false, cfg.MobileSize or (IsMobile and 46 or 40), {}
+	local mobileOn, mobileSize, mobileList = false, cfg.MobileSize or 60, {}
 	local Window = {}
 
-	local function baseScale() return State.Scale * fit(W, H) * BASE end
+	local function baseScale() return State.Scale * fit(W, H) end
 
 	local gui = make("ScreenGui", { Name = "SHub", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = PlayerGui })
 	Window.Gui = gui
@@ -732,8 +724,7 @@ function Lib:CreateWindow(cfg)
 	label(top, cfg.Subtitle or "Universal", { Size = 11, Role = "SubText", Box = UDim2.fromOffset(240, 14), Pos = UDim2.fromOffset(56, 29) })
 
 	local function winBtn(txt, x, cb, danger)
-		local sz = IsMobile and 34 or 30
-		local b = make("TextButton", { Size = UDim2.fromOffset(sz, sz), Position = UDim2.new(1, x, 0, 11 - (sz - 30) // 2), Text = txt, Font = BOLD, TextSize = 15, AutoButtonColor = false, BorderSizePixel = 0, Parent = top })
+		local b = make("TextButton", { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(1, x, 0, 11), Text = txt, Font = BOLD, TextSize = 15, AutoButtonColor = false, BorderSizePixel = 0, Parent = top })
 		bind(b, "BackgroundColor3", "Element")
 		bind(b, "TextColor3", "Text")
 		round(b, 8)
@@ -842,7 +833,7 @@ function Lib:CreateWindow(cfg)
 	end
 
 	----------------------------------------------------------------- launcher ("S")
-	local lSize = LAUNCHER
+	local lSize = IsMobile and 60 or 52
 	launcher = make("TextButton", {
 		Name = "Launcher", Size = UDim2.fromOffset(lSize, lSize), Position = UDim2.new(0, 24, 0, 80), Text = letter, Font = Enum.Font.GothamBlack,
 		TextSize = math.floor(lSize * 0.48), AutoButtonColor = false, BorderSizePixel = 0, Visible = false, ZIndex = 5, Parent = gui,
@@ -868,25 +859,21 @@ function Lib:CreateWindow(cfg)
 	----------------------------------------------------------------- mobile shortcut buttons
 	local mobileHolder = make("Frame", { Name = "MobileButtons", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 4, Parent = gui })
 
-	local function placeMobile(btn, idx)
-		local size = mobileSize
-		local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 400)
-		local gap = 8
-		local perCol = math.max(1, math.floor((vp.Y - 80) / (size + gap)))
-		local col, row = (idx - 1) // perCol, (idx - 1) % perCol
-		btn.Size = UDim2.fromOffset(size, size)
-		btn.Position = UDim2.new(1, -(size + 12) - col * (size + gap), 0, 56 + row * (size + gap))
-	end
-
 	function Window:AddMobileButton(o)
 		local idx = #mobileList + 1
+		local size = mobileSize
+		local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 400)
+		local gap = 12
+		local perCol = math.max(1, math.floor((vp.Y - 90) / (size + gap)))
+		local col, row = (idx - 1) // perCol, (idx - 1) % perCol
 		local toggle = o.Toggle ~= false
 		local state = false
 
 		local btn = make("TextButton", {
-			Name = "MB_" .. o.Name, Text = "", AutoButtonColor = false, BorderSizePixel = 0, Parent = mobileHolder,
+			Name = "MB_" .. o.Name, Size = UDim2.fromOffset(size, size),
+			Position = UDim2.new(1, -(size + 16) - col * (size + gap), 0, 70 + row * (size + gap)),
+			Text = "", AutoButtonColor = false, BorderSizePixel = 0, Parent = mobileHolder,
 		})
-		placeMobile(btn, idx)
 		round(btn, 14)
 		local stroke = outline(btn, "Accent", 1.5)
 		stroke.Transparency = 0.5
@@ -959,11 +946,11 @@ function Lib:CreateWindow(cfg)
 
 	function Window:SetMobileSize(px)
 		mobileSize = px
-		for n, m in ipairs(mobileList) do placeMobile(m.btn, n) end
+		for _, m in ipairs(mobileList) do m.btn.Size = UDim2.fromOffset(px, px) end
 	end
 
 	----------------------------------------------------------------- toasts + stats
-	local toasts = make("Frame", { Size = UDim2.new(0, 220, 1, -32), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 16), BackgroundTransparency = 1, ZIndex = 10, Parent = gui })
+	local toasts = make("Frame", { Size = UDim2.new(0, 270, 1, -32), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 16), BackgroundTransparency = 1, ZIndex = 10, Parent = gui })
 	make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = toasts })
 
 	function Window:Notify(title, msg, dur)
@@ -1791,9 +1778,7 @@ function Lib:BuildAppearance()
 	winSec:AddSlider({ Name = "Window opacity", Min = 35, Max = 100, Default = 100, Suffix = "%", Callback = function(v) Window:SetOpacity(v / 100) end })
 	winSec:AddSlider({ Name = "Roundness", Min = 0, Max = 150, Default = 100, Step = 5, Suffix = "%", Callback = function(v) Window:SetRounding(v / 100) end })
 	winSec:AddSlider({ Name = "UI scale", Min = 60, Max = 150, Default = 100, Step = 5, Suffix = "%", Callback = function(v) Window:SetScale(v / 100) end })
-	if not IsMobile then
-		winSec:AddKeybind({ Name = "Toggle menu", Default = Enum.KeyCode.RightShift, Callback = function(k) Window:SetKey(k) end })
-	end
+	winSec:AddKeybind({ Name = "Toggle menu", Default = Enum.KeyCode.RightShift, Callback = function(k) Window:SetKey(k) end })
 
 	local statSec = look:AddSection("Stats Bar", "Left")
 	statSec:AddToggle({ Name = "Show stats bar", Desc = "Always on, drag it anywhere", Default = S.on, Callback = function(v) Hud.SetStat("on", v) end })
@@ -1833,97 +1818,187 @@ function Lib:BuildAppearance()
 
 	local mobSec = look:AddSection("On-screen Buttons", "Right")
 	mobSec:AddToggle({ Name = "Show shortcut buttons", Desc = "Draggable buttons for every feature", Default = Lib.IsMobile, Callback = function(on) Window:SetMobileButtons(on) end })
-	mobSec:AddSlider({ Name = "Button size", Min = 30, Max = 80, Default = IsMobile and 46 or 40, Suffix = "px", Callback = function(v) Window:SetMobileSize(v) end })
+	mobSec:AddSlider({ Name = "Button size", Min = 44, Max = 90, Default = 60, Suffix = "px", Callback = function(v) Window:SetMobileSize(v) end })
 
 	local launcherSec = look:AddSection("Launcher", "Right")
-	local lLetter, lSize = "S", LAUNCHER
+	local lLetter, lSize = "S", Lib.IsMobile and 60 or 52
 	launcherSec:AddTextbox({ Name = "Letter", Default = "S", Placeholder = "S", MaxLength = 2, Callback = function(t)
 		if t ~= "" then lLetter = t; Window:SetLauncher(lLetter, lSize) end
 	end })
-	launcherSec:AddSlider({ Name = "Size", Min = 24, Max = 72, Default = lSize, Suffix = "px", Callback = function(v)
+	launcherSec:AddSlider({ Name = "Size", Min = 36, Max = 84, Default = lSize, Suffix = "px", Callback = function(v)
 		lSize = v
 		Window:SetLauncher(lLetter, lSize)
 	end })
 	launcherSec:AddButton({ Name = "Minimize to launcher", Desc = "Collapse the hub into the draggable launcher", Callback = function() Window:SetVisible(false) end })
 end
 
---==============================================================================
--- DEMO: delete from here down and build your own tabs
---==============================================================================
-Lib:LoadConfig()
+--------------------------------------------------------------------------------
+-- FEATURE REGISTRY (extends the core Registry)
+--   Registry.built = keybind-panel handles keyed by Name (core)
+--   Registry.feats = registered features keyed by Id (this block)
+-- Features queue up before Mount; after Mount they build instantly.
+--------------------------------------------------------------------------------
+Registry.list, Registry.byId, Registry.feats = {}, {}, {}
+Registry.tabs, Registry.sections, Registry.config = {}, {}, {}
 
-local Window = Lib:CreateWindow({ Title = "S Hub", Subtitle = "Universal v2", Letter = "S", Theme = "Aurora", Key = Enum.KeyCode.RightShift })
-Registry.window = Window
-FX.Build(Window)
-Hud.Build(Window, { Letter = "S", Key = Enum.KeyCode.RightShift })
-
-local cleanups, demoConns = {}, {}
-Window.Gui.Destroying:Connect(function()
-	for _, f in ipairs(cleanups) do pcall(f) end
-	for _, cn in ipairs(demoConns) do cn:Disconnect() end
-end)
-
--- one toggle in the UI + one on-screen button + one keybind row, kept in sync
-local function feature(sec, name, desc, icon, apply)
-	local h = { Def = { Name = name, Kind = "toggle" }, state = false, sync = {} }
-	local tog, mob
-	function h.Set(v, from)
-		v = v and true or false
-		h.state = v
-		apply(v)
-		if from ~= "ui" and tog then tog.Set(v, true) end
-		if from ~= "mob" and mob then mob.Set(v, true) end
-		for _, fn in ipairs(h.sync) do fn(v) end
+-- config: core fields + per-feature state/values
+function Lib:SaveConfig()
+	if not canFile() then return end
+	local binds, feats = {}, {}
+	for name, h in pairs(Registry.built) do
+		if h.key then binds[name] = h.key.Name end
 	end
-	tog = sec:AddToggle({ Name = name, Desc = desc, Callback = function(v) h.Set(v, "ui") end })
-	mob = Window:AddMobileButton({ Name = name, Icon = icon, Callback = function(v) h.Set(v, "mob") end })
-	Registry.add(h)
-	table.insert(cleanups, function() apply(false) end)
-	return h.Set
+	for id, h in pairs(Registry.feats) do
+		feats[id] = { on = h.state, values = h.values }
+	end
+	pcall(function()
+		writefile(CONFIG_FILE, HttpService:JSONEncode({ fx = UI.fx, stats = UI.stats, keys = UI.keys, binds = binds, features = feats }))
+	end)
 end
 
------------------------------------------------------------------------ Home
-local home = Window:AddTab("Home")
-
-local overview = home:AddSection("Overview", "Left")
-overview:AddCard({ Title = "S Hub Universal", Body = "Open the Appearance tab for themes, colors, screen effects, stats bar and keybind panel. Tap the S button after minimizing to bring the hub back.", Color = Color3.fromRGB(150, 90, 255) })
-overview:AddCard({
-	Title = "Player Profile",
-	Body = ("User: %s (@%s)\nUser ID: %d\nAccount Age: %d days"):format(LocalPlayer.DisplayName, LocalPlayer.Name, LocalPlayer.UserId, LocalPlayer.AccountAge),
-	Color = Color3.fromRGB(70, 140, 255),
-})
-local session = overview:AddCard({ Title = "Session & Server", Body = "" })
-local live = overview:AddCard({ Title = "Live Stats", Body = "", Color = Color3.fromRGB(255, 166, 52) })
-
-local gameName = "Loading..."
-local jobId = game.JobId ~= "" and (game.JobId:sub(1, 13) .. "...") or "Studio"
-local function sessionText()
-	local up = math.floor(workspace.DistributedGameTime)
-	return ("Game: %s\nPlace ID: %d\nJob ID: %s\nPlayers: %d / %d\nServer Uptime: %d min %d sec"):format(
-		gameName, game.PlaceId, jobId, #Players:GetPlayers(), Players.MaxPlayers, up // 60, up % 60)
+function Lib:LoadConfig()
+	if not canFile() then return end
+	pcall(function()
+		if not isfile(CONFIG_FILE) then return end
+		local data = HttpService:JSONDecode(readfile(CONFIG_FILE))
+		for _, group in ipairs({ "fx", "stats", "keys" }) do
+			for k, v in pairs(data[group] or {}) do
+				local cur = UI[group][k]
+				if cur ~= nil and typeof(v) == typeof(cur) then UI[group][k] = v end
+			end
+		end
+		Lib.SavedBinds = data.binds or {}
+		Registry.config = type(data.features) == "table" and data.features or {}
+	end)
 end
-task.spawn(function()
-	local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, game.PlaceId)
-	gameName = ok and info.Name or "Unknown"
-end)
 
-local fps = 60
-table.insert(demoConns, RunService.Heartbeat:Connect(function(dt) fps += (1 / math.max(dt, 1e-4) - fps) * 0.1 end))
-task.spawn(function()
-	while Window.Gui.Parent do
-		session.SetBody(sessionText())
-		local ok, p = pcall(function() return StatsService.Network.ServerStatsItem["Data Ping"]:GetValue() end)
-		live.SetBody(("FPS: %d\nPing: %s\nDevice: %s"):format(math.floor(fps + 0.5), ok and (math.floor(p) .. " ms") or "n/a", IsMobile and "Mobile" or "Desktop"))
-		task.wait(1)
+function Lib:Notify(title, msg, dur)
+	if Registry.window then Registry.window:Notify(title, msg, dur) end
+end
+
+local function sectionFor(def)
+	local tab = Registry.tabs[def.Tab]
+	if not tab then
+		tab = Registry.window:AddTab(def.Tab)
+		Registry.tabs[def.Tab] = tab
 	end
-end)
+	local key = def.Tab .. "|" .. def.Section
+	local sec = Registry.sections[key]
+	if not sec then
+		sec = tab:AddSection(def.Section, def.Side or "Left")
+		Registry.sections[key] = sec
+	end
+	return sec
+end
 
-local quick = home:AddSection("Quick Shortcuts", "Right")
-quick:AddToggle({ Name = "FPS / ping counter", Desc = "Live readout in the corner", Callback = function(on) Window:SetFPSCounter(on) end })
+local SettingDefaults = {
+	Slider   = function(o) return o.Min or 0 end,
+	Dropdown = function(o) return o.Options and o.Options[1] end,
+	Toggle   = function() return false end,
+	Textbox  = function() return "" end,
+}
 
+local function build(def)
+	if Registry.feats[def.Id] then return end
+	local w = Registry.window
+	local sec = sectionFor(def)
+	local saved = Registry.config[def.Id] or {}
+	local h = { Def = def, state = false, values = {}, sync = {} }
+	Registry.feats[def.Id] = h
 
------------------------------------------------------------------- Appearance (last)
-Lib:BuildAppearance()
+	local function run(on)
+		h.state = on
+		local ok, err = pcall(def.Apply, on, h.values, h)
+		if not ok then warn(("[SHub] %s: %s"):format(def.Id, tostring(err))) end
+		saveSoon()
+	end
 
-Window:Notify("S Hub", IsMobile and "Loaded. Use the - button, then tap S to reopen." or "Loaded. Press RightShift to hide or show.", 4)
-Window:SetMobileButtons(IsMobile)
+	if def.Kind == "button" then
+		h.Run = function() run(true) end
+		sec:AddButton({ Name = def.Name, Desc = def.Desc, Callback = h.Run })
+		if def.Mobile ~= false then
+			w:AddMobileButton({ Name = def.Name, Icon = def.Icon, Toggle = false, Callback = h.Run })
+		end
+	else
+		local tog, mob
+		local function set(v, from)
+			v = v and true or false
+			run(v)
+			if from ~= "ui" and tog then tog.Set(v, true) end
+			if from ~= "mob" and mob then mob.Set(v, true) end
+			for _, fn in ipairs(h.sync) do fn(v) end
+		end
+		tog = sec:AddToggle({ Name = def.Name, Desc = def.Desc, Callback = function(v) set(v, "ui") end })
+		if def.Mobile ~= false then
+			mob = w:AddMobileButton({ Name = def.Name, Icon = def.Icon, Callback = function(v) set(v, "mob") end })
+		end
+		h.Set = function(v) set(v, "api") end
+	end
+
+	-- settings: sliders / dropdowns / toggles / textboxes, values land in h.values[Key]
+	for _, s in ipairs(def.Settings or {}) do
+		local o = table.clone(s)
+		local kind = o.Type or "Slider"
+		o.Type = nil
+		local key = o.Key or o.Name
+		local d = saved.values and saved.values[key]
+		if d == nil then d = o.Default end
+		if d == nil and SettingDefaults[kind] then d = SettingDefaults[kind](o) end
+		o.Default = d
+		h.values[key] = d
+		local cb = o.Callback
+		o.Callback = function(v)
+			h.values[key] = v
+			if cb then cb(v, h) end
+			saveSoon()
+		end
+		sec["Add" .. kind](sec, o)
+	end
+
+	Registry.add(h) -- keybind panel row + saved bind
+	if h.Set and saved.on then h.Set(true) end
+end
+
+-- def = { Id, Name, Apply(on, values, handle), Tab, Section, Side, Desc, Icon,
+--         Kind = "toggle" | "button", Mobile = true, Settings = { {Type, Key, ...} } }
+function Lib:Register(def)
+	assert(def and def.Id and def.Name and def.Apply, "Register needs Id, Name, Apply")
+	if Registry.byId[def.Id] then return Registry.feats[def.Id] end
+	def.Tab = def.Tab or "Main"
+	def.Section = def.Section or "Features"
+	Registry.byId[def.Id] = def
+	table.insert(Registry.list, def)
+	if Registry.window then build(def) end
+	return def
+end
+
+function Lib:Get(id) return Registry.feats[id] end
+function Lib:Features() return Registry.list end
+
+-- drive a feature from code / admin commands
+function Lib:SetFeature(id, on)
+	local h = Registry.feats[id]
+	if not h then return false end
+	if h.Run then h.Run() elseif h.Set then h.Set(on) end
+	return true
+end
+
+-- window + FX + HUD + queued features
+function Lib:Mount(cfg)
+	cfg = cfg or {}
+	Lib:LoadConfig()
+	table.clear(Registry.tabs); table.clear(Registry.sections); table.clear(Registry.feats)
+	local w = self:CreateWindow(cfg)
+	Registry.window = w
+	FX.Build(w)
+	Hud.Build(w, cfg)
+	w.Gui.Destroying:Connect(function()
+		for _, h in pairs(Registry.feats) do
+			if h.state and h.Def.Kind ~= "button" then pcall(h.Def.Apply, false, h.values, h) end
+		end
+	end)
+	for _, def in ipairs(Registry.list) do build(def) end
+	return w
+end
+
+return Lib -- must be the last line of the core file
