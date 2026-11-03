@@ -14,6 +14,8 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local BASE = IsMobile and 0.78 or 0.82 -- global size multiplier, lower = smaller
+local LAUNCHER = IsMobile and 44 or 38
 
 --------------------------------------------------------------------------------
 -- themes
@@ -47,15 +49,15 @@ local State = { Theme = "Aurora", Accent = nil, Rounding = 1, Opacity = 1, Scale
 Lib.UI = {
 	fx = {
 		on = false, menuOnly = true, style = "Spooky Halloween", tint = "Style",
-		opacity = 0.8, density = 1, speed = 1, deco = true, lightning = true,
+		opacity = 0.8, density = IsMobile and 0.5 or 1, speed = 1, deco = true, lightning = true,
 		vignette = true, vignetteStrength = 0.6, fade = 1,
 	},
 	stats = {
-		on = true, logo = true, name = true, ping = true, fps = true, players = true,
-		quality = true, scale = 1, opacity = 1, preset = "Top Center",
+		on = true, logo = true, name = not IsMobile, ping = true, fps = true, players = not IsMobile,
+		quality = true, scale = IsMobile and 0.8 or 0.85, opacity = 1, preset = "Top Center",
 	},
 	keys = {
-		on = not IsMobile, showUnbound = true, maxRows = 8, scale = 1, opacity = 1,
+		on = not IsMobile, showUnbound = true, maxRows = 8, scale = 0.85, opacity = 1,
 		collapsed = false, menu = "",
 	},
 }
@@ -258,6 +260,12 @@ local function fit(w, h)
 	return math.clamp(math.min((vp.X - 24) / w, (vp.Y - 24) / h), 0.4, 1)
 end
 
+-- freezes the parent page scroll while a slider / picker is being dragged
+local function lockScroll(inst, on)
+	local sf = inst:FindFirstAncestorOfClass("ScrollingFrame")
+	if sf then sf.ScrollingEnabled = not on end
+end
+
 --------------------------------------------------------------------------------
 -- section elements
 --------------------------------------------------------------------------------
@@ -366,10 +374,11 @@ function Section:AddSlider(o)
 		local a = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
 		obj.Set(min + (max - min) * a)
 	end
-	local hit = make("TextButton", { Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 22), BackgroundTransparency = 1, Text = "", Parent = f })
+	local hit = make("TextButton", { Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 18), BackgroundTransparency = 1, Text = "", Parent = f })
 	hit.InputBegan:Connect(function(i)
 		if isPress(i) then
 			dragging = true
+			lockScroll(f, true)
 			tween(knobScale, { Scale = 1.5 }, BACK)
 			fromX(i.Position.X)
 		end
@@ -380,6 +389,7 @@ function Section:AddSlider(o)
 	connect(UserInputService.InputEnded, function(i)
 		if isPress(i) and dragging then
 			dragging = false
+			lockScroll(f, false)
 			tween(knobScale, { Scale = 1 }, BACK)
 		end
 	end)
@@ -551,14 +561,14 @@ function Section:AddColorPicker(o)
 		h = math.clamp((pos.Y - hue.AbsolutePosition.Y) / hue.AbsoluteSize.Y, 0, 0.999)
 		apply()
 	end
-	sv.InputBegan:Connect(function(i) if isPress(i) then dragSV = true; updSV(i.Position) end end)
-	hue.InputBegan:Connect(function(i) if isPress(i) then dragH = true; updH(i.Position) end end)
+	sv.InputBegan:Connect(function(i) if isPress(i) then dragSV = true; lockScroll(panel, true); updSV(i.Position) end end)
+	hue.InputBegan:Connect(function(i) if isPress(i) then dragH = true; lockScroll(panel, true); updH(i.Position) end end)
 	connect(UserInputService.InputChanged, function(i)
 		if i.UserInputType ~= Enum.UserInputType.MouseMovement and i.UserInputType ~= Enum.UserInputType.Touch then return end
 		if dragSV then updSV(i.Position) elseif dragH then updH(i.Position) end
 	end)
 	connect(UserInputService.InputEnded, function(i)
-		if isPress(i) then dragSV, dragH = false, false end
+		if isPress(i) then dragSV, dragH = false, false; lockScroll(panel, false) end
 	end)
 
 	hit.MouseButton1Click:Connect(function()
@@ -653,12 +663,12 @@ function Lib:CreateWindow(cfg)
 
 	local key = cfg.Key or Enum.KeyCode.RightShift
 	local letter = cfg.Letter or "S"
-	local W, H = IsMobile and 600 or 720, IsMobile and 360 or 460
+	local W, H = IsMobile and 560 or 680, IsMobile and 320 or 430
 	local visible, alive = true, true
-	local mobileOn, mobileSize, mobileList = false, cfg.MobileSize or 60, {}
+	local mobileOn, mobileSize, mobileList = false, cfg.MobileSize or (IsMobile and 46 or 40), {}
 	local Window = {}
 
-	local function baseScale() return State.Scale * fit(W, H) end
+	local function baseScale() return State.Scale * fit(W, H) * BASE end
 
 	local gui = make("ScreenGui", { Name = "SHub", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = PlayerGui })
 	Window.Gui = gui
@@ -722,7 +732,8 @@ function Lib:CreateWindow(cfg)
 	label(top, cfg.Subtitle or "Universal", { Size = 11, Role = "SubText", Box = UDim2.fromOffset(240, 14), Pos = UDim2.fromOffset(56, 29) })
 
 	local function winBtn(txt, x, cb, danger)
-		local b = make("TextButton", { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(1, x, 0, 11), Text = txt, Font = BOLD, TextSize = 15, AutoButtonColor = false, BorderSizePixel = 0, Parent = top })
+		local sz = IsMobile and 34 or 30
+		local b = make("TextButton", { Size = UDim2.fromOffset(sz, sz), Position = UDim2.new(1, x, 0, 11 - (sz - 30) // 2), Text = txt, Font = BOLD, TextSize = 15, AutoButtonColor = false, BorderSizePixel = 0, Parent = top })
 		bind(b, "BackgroundColor3", "Element")
 		bind(b, "TextColor3", "Text")
 		round(b, 8)
@@ -831,7 +842,7 @@ function Lib:CreateWindow(cfg)
 	end
 
 	----------------------------------------------------------------- launcher ("S")
-	local lSize = IsMobile and 60 or 52
+	local lSize = LAUNCHER
 	launcher = make("TextButton", {
 		Name = "Launcher", Size = UDim2.fromOffset(lSize, lSize), Position = UDim2.new(0, 24, 0, 80), Text = letter, Font = Enum.Font.GothamBlack,
 		TextSize = math.floor(lSize * 0.48), AutoButtonColor = false, BorderSizePixel = 0, Visible = false, ZIndex = 5, Parent = gui,
@@ -857,21 +868,25 @@ function Lib:CreateWindow(cfg)
 	----------------------------------------------------------------- mobile shortcut buttons
 	local mobileHolder = make("Frame", { Name = "MobileButtons", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 4, Parent = gui })
 
-	function Window:AddMobileButton(o)
-		local idx = #mobileList + 1
+	local function placeMobile(btn, idx)
 		local size = mobileSize
 		local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 400)
-		local gap = 12
-		local perCol = math.max(1, math.floor((vp.Y - 90) / (size + gap)))
+		local gap = 8
+		local perCol = math.max(1, math.floor((vp.Y - 80) / (size + gap)))
 		local col, row = (idx - 1) // perCol, (idx - 1) % perCol
+		btn.Size = UDim2.fromOffset(size, size)
+		btn.Position = UDim2.new(1, -(size + 12) - col * (size + gap), 0, 56 + row * (size + gap))
+	end
+
+	function Window:AddMobileButton(o)
+		local idx = #mobileList + 1
 		local toggle = o.Toggle ~= false
 		local state = false
 
 		local btn = make("TextButton", {
-			Name = "MB_" .. o.Name, Size = UDim2.fromOffset(size, size),
-			Position = UDim2.new(1, -(size + 16) - col * (size + gap), 0, 70 + row * (size + gap)),
-			Text = "", AutoButtonColor = false, BorderSizePixel = 0, Parent = mobileHolder,
+			Name = "MB_" .. o.Name, Text = "", AutoButtonColor = false, BorderSizePixel = 0, Parent = mobileHolder,
 		})
+		placeMobile(btn, idx)
 		round(btn, 14)
 		local stroke = outline(btn, "Accent", 1.5)
 		stroke.Transparency = 0.5
@@ -944,11 +959,11 @@ function Lib:CreateWindow(cfg)
 
 	function Window:SetMobileSize(px)
 		mobileSize = px
-		for _, m in ipairs(mobileList) do m.btn.Size = UDim2.fromOffset(px, px) end
+		for n, m in ipairs(mobileList) do placeMobile(m.btn, n) end
 	end
 
 	----------------------------------------------------------------- toasts + stats
-	local toasts = make("Frame", { Size = UDim2.new(0, 270, 1, -32), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 16), BackgroundTransparency = 1, ZIndex = 10, Parent = gui })
+	local toasts = make("Frame", { Size = UDim2.new(0, 220, 1, -32), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 16), BackgroundTransparency = 1, ZIndex = 10, Parent = gui })
 	make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = toasts })
 
 	function Window:Notify(title, msg, dur)
@@ -1776,7 +1791,9 @@ function Lib:BuildAppearance()
 	winSec:AddSlider({ Name = "Window opacity", Min = 35, Max = 100, Default = 100, Suffix = "%", Callback = function(v) Window:SetOpacity(v / 100) end })
 	winSec:AddSlider({ Name = "Roundness", Min = 0, Max = 150, Default = 100, Step = 5, Suffix = "%", Callback = function(v) Window:SetRounding(v / 100) end })
 	winSec:AddSlider({ Name = "UI scale", Min = 60, Max = 150, Default = 100, Step = 5, Suffix = "%", Callback = function(v) Window:SetScale(v / 100) end })
-	winSec:AddKeybind({ Name = "Toggle menu", Default = Enum.KeyCode.RightShift, Callback = function(k) Window:SetKey(k) end })
+	if not IsMobile then
+		winSec:AddKeybind({ Name = "Toggle menu", Default = Enum.KeyCode.RightShift, Callback = function(k) Window:SetKey(k) end })
+	end
 
 	local statSec = look:AddSection("Stats Bar", "Left")
 	statSec:AddToggle({ Name = "Show stats bar", Desc = "Always on, drag it anywhere", Default = S.on, Callback = function(v) Hud.SetStat("on", v) end })
@@ -1816,14 +1833,14 @@ function Lib:BuildAppearance()
 
 	local mobSec = look:AddSection("On-screen Buttons", "Right")
 	mobSec:AddToggle({ Name = "Show shortcut buttons", Desc = "Draggable buttons for every feature", Default = Lib.IsMobile, Callback = function(on) Window:SetMobileButtons(on) end })
-	mobSec:AddSlider({ Name = "Button size", Min = 44, Max = 90, Default = 60, Suffix = "px", Callback = function(v) Window:SetMobileSize(v) end })
+	mobSec:AddSlider({ Name = "Button size", Min = 30, Max = 80, Default = IsMobile and 46 or 40, Suffix = "px", Callback = function(v) Window:SetMobileSize(v) end })
 
 	local launcherSec = look:AddSection("Launcher", "Right")
-	local lLetter, lSize = "S", Lib.IsMobile and 60 or 52
+	local lLetter, lSize = "S", LAUNCHER
 	launcherSec:AddTextbox({ Name = "Letter", Default = "S", Placeholder = "S", MaxLength = 2, Callback = function(t)
 		if t ~= "" then lLetter = t; Window:SetLauncher(lLetter, lSize) end
 	end })
-	launcherSec:AddSlider({ Name = "Size", Min = 36, Max = 84, Default = lSize, Suffix = "px", Callback = function(v)
+	launcherSec:AddSlider({ Name = "Size", Min = 24, Max = 72, Default = lSize, Suffix = "px", Callback = function(v)
 		lSize = v
 		Window:SetLauncher(lLetter, lSize)
 	end })
