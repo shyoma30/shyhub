@@ -260,7 +260,9 @@ local function fit(w, h)
 	return math.clamp(math.min((vp.X - 24) / w, (vp.Y - 24) / h), 0.4, 1)
 end
 
--- logo image overlay: draws cfg.Image over the letter, falls back to the letter if unset
+-- logo image overlay: full-bleed square. Once the image paints, the slot's own
+-- background (and launcher ring) drops out, so a transparent png stays transparent.
+-- Falls back to the letter if the image never loads.
 local function logoImage(parent, image, textObj, radius)
 	if image == nil or image == "" then return end
 
@@ -269,14 +271,26 @@ local function logoImage(parent, image, textObj, radius)
 		local img = make("ImageLabel", {
 			Name = "LogoImage",
 			Size = UDim2.fromScale(1, 1),
+			Position = UDim2.fromScale(0, 0),
+			AnchorPoint = Vector2.new(0, 0),
 			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
 			Image = asset,
-			ScaleType = Enum.ScaleType.Crop,
+			ScaleType = Enum.ScaleType.Fit,
 			ZIndex = parent.ZIndex + 1,
 			Parent = parent,
-		}, { make("UICorner", { CornerRadius = UDim.new(0, radius or 0) }) })
-		task.wait(0.5)
-		if img.Parent and textObj then textObj.TextTransparency = 1 end
+		})
+
+		-- wait for the paint (3s cap) so the letter doesn't vanish before the image is up
+		local t0 = os.clock()
+		while img.Parent and not img.IsLoaded and os.clock() - t0 < 3 do task.wait() end
+		if not img.Parent then return end
+		if not img.IsLoaded then img:Destroy() return end
+
+		parent.BackgroundTransparency = 1
+		local ring = parent:FindFirstChildOfClass("UIStroke")
+		if ring then ring.Enabled = false end
+		if textObj then textObj.TextTransparency = 1 end
 	end
 
 	if typeof(image) == "number" or (typeof(image) == "string" and image:match("^%d+$")) then
