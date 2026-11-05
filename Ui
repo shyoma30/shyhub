@@ -260,6 +260,22 @@ local function fit(w, h)
 	return math.clamp(math.min((vp.X - 24) / w, (vp.Y - 24) / h), 0.4, 1)
 end
 
+-- logo image overlay: draws cfg.Image over the letter, falls back to the letter if unset
+local function logoImage(parent, image, textObj, radius)
+	if image == nil or image == "" then return end
+	if typeof(image) == "number" then image = "rbxassetid://" .. image end
+	make("ImageLabel", {
+		Name = "LogoImage",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Image = image,
+		ScaleType = Enum.ScaleType.Crop,
+		ZIndex = parent.ZIndex + 1,
+		Parent = parent,
+	}, { make("UICorner", { CornerRadius = UDim.new(0, radius or 0) }) })
+	if textObj then textObj.TextTransparency = 1 end
+end
+
 --------------------------------------------------------------------------------
 -- section elements
 --------------------------------------------------------------------------------
@@ -713,21 +729,6 @@ function Lib:CreateWindow(cfg)
 	end
 
 	----------------------------------------------------------------- top bar
-	local function logoImage(parent, image, textObj, radius)
-		if image == nil or image == "" then return end
-		if typeof(image) == "number" then image = "rbxassetid://" .. image end
-		make("ImageLabel", {
-			Name = "LogoImage",
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			Image = image,
-			ScaleType = Enum.ScaleType.Crop,
-			ZIndex = parent.ZIndex + 1,
-			Parent = parent,
-		}, { make("UICorner", { CornerRadius = UDim.new(0, radius or 0) }) })
-		if textObj then textObj.TextTransparency = 1 end
-	end
-
 	local top = make("Frame", { Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Parent = body })
 	local logo = make("Frame", { Size = UDim2.fromOffset(32, 32), Position = UDim2.fromOffset(14, 10), BorderSizePixel = 0, Parent = top })
 	bind(logo, "BackgroundColor3", "Accent")
@@ -1417,6 +1418,7 @@ function Hud.Build(window, cfg)
 	round(logo, 7)
 	local logoText = label(logo, cfg.Letter or "S", { Font = Enum.Font.GothamBlack, Size = 13, AlignX = Enum.TextXAlignment.Center, Role = false })
 	reg(function(t) tween(logoText, { TextColor3 = onAccent() }, t) end)
+	logoImage(logo, cfg.Image, logoText, 7)
 	local nameL = txt(sId, LocalPlayer.DisplayName, 2, true, "Text")
 
 	-- ping (signal bars)
@@ -1500,6 +1502,7 @@ function Hud.Build(window, cfg)
 	round(hlogo, 6)
 	local hlogoText = label(hlogo, cfg.Letter or "S", { Font = Enum.Font.GothamBlack, Size = 12, AlignX = Enum.TextXAlignment.Center, Role = false })
 	reg(function(t) tween(hlogoText, { TextColor3 = onAccent() }, t) end)
+	logoImage(hlogo, cfg.Image, hlogoText, 6)
 	label(header, "Active Keybinds", { Font = BOLD, Size = 13, Box = UDim2.new(1, -90, 1, 0), Pos = UDim2.fromOffset(36, 0) })
 	local badge = make("TextButton", { Size = UDim2.fromOffset(30, 20), Position = UDim2.new(1, -40, 0, 9), Text = "0", Font = BOLD, TextSize = 11, AutoButtonColor = false, BorderSizePixel = 0, Parent = header })
 	bind(badge, "BackgroundColor3", "Background")
