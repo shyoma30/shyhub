@@ -265,24 +265,19 @@ local function logoImage(parent, image, textObj, radius)
 	if image == nil or image == "" then return end
 
 	local function show(asset)
-		if not parent.Parent then return end
-		local img = make("ImageLabel", {
-			Name = "LogoImage",
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			Image = asset,
-			ScaleType = Enum.ScaleType.Crop,
-			ZIndex = parent.ZIndex + 1,
-			Parent = parent,
-		}, { make("UICorner", { CornerRadius = UDim.new(0, radius or 0) }) })
-		local t = 0
-		while img.Parent and not img.IsLoaded and t < 6 do t += 0.25; task.wait(0.25) end
-		if img.Parent and img.IsLoaded then
-			if textObj then textObj.TextTransparency = 1 end
-		else
-			warn("[SHub] logo did not load:", asset)
-			img:Destroy()
-		end
+	if not parent.Parent then return end
+	local img = make("ImageLabel", {
+		Name = "LogoImage",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Image = asset,
+		ScaleType = Enum.ScaleType.Crop,
+		ZIndex = parent.ZIndex + 1,
+		Parent = parent,
+	}, { make("UICorner", { CornerRadius = UDim.new(0, radius or 0) }) })
+	print("[SHub] logo shown:", asset)
+	task.wait(0.5)
+	if img.Parent and textObj then textObj.TextTransparency = 1 end
 	end
 
 	if typeof(image) == "number" or (typeof(image) == "string" and image:match("^%d+$")) then
