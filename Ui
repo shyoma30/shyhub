@@ -263,17 +263,67 @@ end
 -- logo image overlay: draws cfg.Image over the letter, falls back to the letter if unset
 local function logoImage(parent, image, textObj, radius)
 	if image == nil or image == "" then return end
-	if typeof(image) == "number" then image = "rbxassetid://" .. image end
-	make("ImageLabel", {
-		Name = "LogoImage",
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		Image = image,
-		ScaleType = Enum.ScaleType.Crop,
-		ZIndex = parent.ZIndex + 1,
-		Parent = parent,
-	}, { make("UICorner", { CornerRadius = UDim.new(0, radius or 0) }) })
-	if textObj then textObj.TextTransparency = 1 end
+
+	local function show(asset)
+		if not parent.Parent then return end
+		local img = make("ImageLabel", {
+			Name = "LogoImage",
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			Image = asset,
+			ScaleType = Enum.ScaleType.Crop,
+			ZIndex = parent.ZIndex + 1,
+			Parent = parent,
+		}, { make("UICorner", { CornerRadius = UDim.new(0, radius or 0) }) })
+		local t = 0
+		while img.Parent and not img.IsLoaded and t < 6 do t += 0.25; task.wait(0.25) end
+		if img.Parent and img.IsLoaded then
+			if textObj then textObj.TextTransparency = 1 end
+		else
+			warn("[SHub] logo did not load:", asset)
+			img:Destroy()
+		end
+	end
+
+	if typeof(image) == "number" or (typeof(image) == "string" and image:match("^%d+$")) then
+		return task.spawn(show, "rbxassetid://" .. image)
+	end
+	if typeof(image) ~= "string" then return end
+	if image:match("^rbxasset") then return task.spawn(show, image) end
+
+	task.spawn(function()
+		local url = image
+		-- imgur page link -> direct file
+		local pageId = url:match("^https?://imgur%.com/(%w+)/?$")
+		if pageId then url = "https://i.imgur.com/" .. pageId .. ".png" end
+		-- direct link without extension
+		if url:match("^https?://i%.imgur%.com/%w+$") then url = url .. ".png" end
+
+		if url:match("imgur%.com/a/") or url:match("imgur%.com/gallery/") then
+			return warn("[SHub] imgur album/gallery link, use the direct i.imgur.com/<id>.png of one image")
+		end
+		if url:match("%.gifv$") or url:match("%.mp4$") or url:match("%.webp$") then
+			return warn("[SHub] unsupported format, use .png or .jpg:", url)
+		end
+		if typeof(writefile) ~= "function" or not (getcustomasset or getsynasset) then
+			return warn("[SHub] executor has no writefile/getcustomasset, use an rbxassetid instead")
+		end
+
+		local ok, data = pcall(game.HttpGet, game, url)
+		if not ok then return warn("[SHub] logo fetch failed:", data) end
+		local isPng = data:sub(1, 4) == "\137PNG"
+		local isJpg = data:sub(1, 3) == "\255\216\255"
+		if not (isPng or isJpg) then
+			return warn("[SHub] logo url is not a png/jpg, got:", data:sub(1, 40))
+		end
+
+		local file = "SHub_logo" .. (isPng and ".png" or ".jpg")
+		local wok, werr = pcall(writefile, file, data)
+		if not wok then return warn("[SHub] writefile failed:", werr) end
+		local aok, asset = pcall(getcustomasset or getsynasset, file)
+		if not aok then return warn("[SHub] getcustomasset failed:", asset) end
+		show(asset)
+	end)
 end
 
 --------------------------------------------------------------------------------
