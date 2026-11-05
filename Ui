@@ -260,6 +260,73 @@ local function fit(w, h)
 	return math.clamp(math.min((vp.X - 24) / w, (vp.Y - 24) / h), 0.4, 1)
 end
 
+-- remote logo: download -> writefile -> getcustomasset
+local imgCache = {}
+local httpReq = (syn and syn.request) or (http and http.request) or http_request or request
+local function remoteImage(url, cb)
+	if type(url) ~= "string" or url == "" then return end
+	if imgCache[url] then return cb(imgCache[url]) end
+	task.spawn(function()
+		local asset
+		if url:find("^rbxassetid://") or url:find("^rbxasset://") then
+			asset = url
+		else
+			local gca = getcustomasset or getsynasset
+			if not (gca and typeof(writefile) == "function" and typeof(isfile) == "function") then
+				return warn("[SHub] logo: executor lacks getcustomasset/writefile")
+			end
+			local h = 0
+			for i = 1, #url do h = (h * 31 + url:byte(i)) % 4294967296 end
+			if typeof(makefolder) == "function" and typeof(isfolder) == "function" and not isfolder("SHub") then
+				pcall(makefolder, "SHub")
+			end
+			local base = "SHub/logo_" .. h
+			local path
+			for _, ext in ipairs({ ".png", ".jpg" }) do
+				if isfile(base .. ext) then path = base .. ext break end
+			end
+			if not path then
+				local body
+				if httpReq then
+					local ok, res = pcall(httpReq, { Url = url, Method = "GET" })
+					if ok and res and res.StatusCode == 200 then body = res.Body end
+				end
+				if not body then
+					local ok, b = pcall(game.HttpGet, game, url, true)
+					if ok then body = b end
+				end
+				if not body or #body < 8 then return warn("[SHub] logo: download failed") end
+				local ext
+				if body:sub(1, 4) == "\137PNG" then ext = ".png"
+				elseif body:sub(1, 2) == "\255\216" then ext = ".jpg"
+				else return warn("[SHub] logo: png/jpg only (webp/gif unsupported)") end
+				path = base .. ext
+				writefile(path, body)
+			end
+			local ok, a = pcall(gca, path)
+			if not ok or not a or a == "" then return warn("[SHub] logo: getcustomasset failed") end
+			asset = a
+		end
+		imgCache[url] = asset
+		cb(asset)
+	end)
+end
+
+local function logoImage(parent, url, textObj, radius)
+	if type(url) ~= "string" or url == "" then return end
+	local img = make("ImageLabel", {
+		Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+		Visible = false, Parent = parent,
+	})
+	make("UICorner", { CornerRadius = UDim.new(0, radius), Parent = img })
+	remoteImage(url, function(a)
+		if not img.Parent then return end
+		img.Image = a
+		img.Visible = true
+		textObj.TextTransparency = 1
+	end)
+end
+
 --------------------------------------------------------------------------------
 -- section elements
 --------------------------------------------------------------------------------
@@ -719,6 +786,7 @@ function Lib:CreateWindow(cfg)
 	round(logo, 9)
 	local logoText = label(logo, letter, { Font = Enum.Font.GothamBlack, Size = 19, AlignX = Enum.TextXAlignment.Center, Role = false })
 	reg(function(t) tween(logoText, { TextColor3 = onAccent() }, t) end)
+	logoImage(logo, cfg.Image, logoText, 9)
 	label(top, cfg.Title or "S Hub", { Font = BOLD, Size = 16, Box = UDim2.fromOffset(240, 20), Pos = UDim2.fromOffset(56, 8) })
 	label(top, cfg.Subtitle or "Universal", { Size = 11, Role = "SubText", Box = UDim2.fromOffset(240, 14), Pos = UDim2.fromOffset(56, 29) })
 
@@ -846,6 +914,7 @@ function Lib:CreateWindow(cfg)
 	bind(launcher, "BackgroundColor3", "Background")
 	bind(launcher, "TextColor3", "Accent")
 	round(launcher, 15)
+	logoImage(launcher, cfg.Image, launcher, 15)
 	local lStroke = outline(launcher, "Accent", 2.5)
 	lStroke.Transparency = 0.1
 	TweenService:Create(lStroke, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Transparency = 0.75 }):Play()
@@ -1400,6 +1469,7 @@ function Hud.Build(window, cfg)
 	round(logo, 7)
 	local logoText = label(logo, cfg.Letter or "S", { Font = Enum.Font.GothamBlack, Size = 13, AlignX = Enum.TextXAlignment.Center, Role = false })
 	reg(function(t) tween(logoText, { TextColor3 = onAccent() }, t) end)
+	logoImage(logo, cfg.Image, logoText, 7)
 	local nameL = txt(sId, LocalPlayer.DisplayName, 2, true, "Text")
 
 	-- ping (signal bars)
@@ -1483,6 +1553,7 @@ function Hud.Build(window, cfg)
 	round(hlogo, 6)
 	local hlogoText = label(hlogo, cfg.Letter or "S", { Font = Enum.Font.GothamBlack, Size = 12, AlignX = Enum.TextXAlignment.Center, Role = false })
 	reg(function(t) tween(hlogoText, { TextColor3 = onAccent() }, t) end)
+	logoImage(hlogo, cfg.Image, hlogoText, 6)
 	label(header, "Active Keybinds", { Font = BOLD, Size = 13, Box = UDim2.new(1, -90, 1, 0), Pos = UDim2.fromOffset(36, 0) })
 	local badge = make("TextButton", { Size = UDim2.fromOffset(30, 20), Position = UDim2.new(1, -40, 0, 9), Text = "0", Font = BOLD, TextSize = 11, AutoButtonColor = false, BorderSizePixel = 0, Parent = header })
 	bind(badge, "BackgroundColor3", "Background")
