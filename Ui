@@ -713,6 +713,21 @@ function Lib:CreateWindow(cfg)
 	end
 
 	----------------------------------------------------------------- top bar
+	local function logoImage(parent, image, textObj, radius)
+		if image == nil or image == "" then return end
+		if typeof(image) == "number" then image = "rbxassetid://" .. image end
+		make("ImageLabel", {
+			Name = "LogoImage",
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			Image = image,
+			ScaleType = Enum.ScaleType.Crop,
+			ZIndex = parent.ZIndex + 1,
+			Parent = parent,
+		}, { make("UICorner", { CornerRadius = UDim.new(0, radius or 0) }) })
+		if textObj then textObj.TextTransparency = 1 end
+	end
+
 	local top = make("Frame", { Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Parent = body })
 	local logo = make("Frame", { Size = UDim2.fromOffset(32, 32), Position = UDim2.fromOffset(14, 10), BorderSizePixel = 0, Parent = top })
 	bind(logo, "BackgroundColor3", "Accent")
