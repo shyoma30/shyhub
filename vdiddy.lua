@@ -5,7 +5,9 @@ local VIM = game:GetService("VirtualInputManager")
 
 local parent = (gethui and gethui()) or game:GetService("CoreGui")
 pcall(function()
-    if parent:FindFirstChild("NumPad") then parent.NumPad:Destroy() end
+    if parent:FindFirstChild("NumPad") then
+        parent.NumPad:Destroy()
+    end
 end)
 
 local gui = Instance.new("ScreenGui")
@@ -27,56 +29,82 @@ local W = COLS * SIZE + (COLS + 1) * PAD
 local H = 2 * SIZE + 3 * PAD
 
 local frame = Instance.new("Frame")
+frame.Name = "Background"
 frame.Size = UDim2.fromOffset(W, H)
 frame.Position = UDim2.new(0.5, -W / 2, 1, -H - 20)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-frame.BackgroundTransparency = 0.90
+frame.BackgroundTransparency = 0.95 -- only slightly visible
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Parent = gui
+
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
 -- drag
 local dragging, dragStart, startPos
-frame.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging, dragStart, startPos = true, i.Position, frame.Position
-        i.Changed:Connect(function()
-            if i.UserInputState == Enum.UserInputState.End then dragging = false end
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
         end)
     end
 end)
-UIS.InputChanged:Connect(function(i)
-    if dragging and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseMovement) then
-        local d = i.Position - dragStart
-        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+
+UIS.InputChanged:Connect(function(input)
+    if dragging and (
+        input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseMovement
+    ) then
+        local delta = input.Position - dragStart
+
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
-local function press(code)
-    VIM:SendKeyEvent(true, code, false, game)
+local function press(keyCode)
+    VIM:SendKeyEvent(true, keyCode, false, game)
     task.wait(0.03)
-    VIM:SendKeyEvent(false, code, false, game)
+    VIM:SendKeyEvent(false, keyCode, false, game)
 end
 
-for idx, k in ipairs(keys) do
-    local col = (idx - 1) % COLS
-    local row = math.floor((idx - 1) / COLS)
+for index, key in ipairs(keys) do
+    local col = (index - 1) % COLS
+    local row = math.floor((index - 1) / COLS)
 
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.fromOffset(SIZE, SIZE)
-    b.Position = UDim2.fromOffset(PAD + col * (SIZE + PAD), PAD + row * (SIZE + PAD))
-    b.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    b.BorderSizePixel = 0
-    b.Text = k[1]
-    b.TextColor3 = Color3.new(1, 1, 1)
-    b.TextSize = 22
-    b.Font = Enum.Font.GothamBold
-    b.AutoButtonColor = true
-    b.Parent = frame
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+    local button = Instance.new("TextButton")
+    button.Name = key[1]
+    button.Size = UDim2.fromOffset(SIZE, SIZE)
+    button.Position = UDim2.fromOffset(
+        PAD + col * (SIZE + PAD),
+        PAD + row * (SIZE + PAD)
+    )
+    button.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    button.BackgroundTransparency = 0.15
+    button.BorderSizePixel = 0
+    button.Text = key[1]
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.TextSize = 22
+    button.Font = Enum.Font.GothamBold
+    button.AutoButtonColor = true
+    button.Parent = frame
 
-    b.MouseButton1Click:Connect(function()
-        task.spawn(press, k[2])
+    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
+
+    button.MouseButton1Click:Connect(function()
+        task.spawn(press, key[2])
     end)
 end
