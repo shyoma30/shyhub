@@ -1,0 +1,82 @@
+-- number keypad 1-0 (mobile)
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local VIM = game:GetService("VirtualInputManager")
+
+local parent = (gethui and gethui()) or game:GetService("CoreGui")
+pcall(function()
+    if parent:FindFirstChild("NumPad") then parent.NumPad:Destroy() end
+end)
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "NumPad"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = parent
+
+local keys = {
+    {"1", Enum.KeyCode.One},   {"2", Enum.KeyCode.Two},
+    {"3", Enum.KeyCode.Three}, {"4", Enum.KeyCode.Four},
+    {"5", Enum.KeyCode.Five},  {"6", Enum.KeyCode.Six},
+    {"7", Enum.KeyCode.Seven}, {"8", Enum.KeyCode.Eight},
+    {"9", Enum.KeyCode.Nine},  {"0", Enum.KeyCode.Zero},
+}
+
+local SIZE, PAD, COLS = 46, 6, 5
+local W = COLS * SIZE + (COLS + 1) * PAD
+local H = 2 * SIZE + 3 * PAD
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromOffset(W, H)
+frame.Position = UDim2.new(0.5, -W / 2, 1, -H - 20)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+frame.BackgroundTransparency = 0.15
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+-- drag
+local dragging, dragStart, startPos
+frame.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging, dragStart, startPos = true, i.Position, frame.Position
+        i.Changed:Connect(function()
+            if i.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+UIS.InputChanged:Connect(function(i)
+    if dragging and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseMovement) then
+        local d = i.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+    end
+end)
+
+local function press(code)
+    VIM:SendKeyEvent(true, code, false, game)
+    task.wait(0.03)
+    VIM:SendKeyEvent(false, code, false, game)
+end
+
+for idx, k in ipairs(keys) do
+    local col = (idx - 1) % COLS
+    local row = math.floor((idx - 1) / COLS)
+
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.fromOffset(SIZE, SIZE)
+    b.Position = UDim2.fromOffset(PAD + col * (SIZE + PAD), PAD + row * (SIZE + PAD))
+    b.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    b.BorderSizePixel = 0
+    b.Text = k[1]
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.TextSize = 22
+    b.Font = Enum.Font.GothamBold
+    b.AutoButtonColor = true
+    b.Parent = frame
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+
+    b.MouseButton1Click:Connect(function()
+        task.spawn(press, k[2])
+    end)
+end
