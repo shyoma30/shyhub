@@ -33,7 +33,7 @@ frame.Name = "Background"
 frame.Size = UDim2.fromOffset(W, H)
 frame.Position = UDim2.new(0.5, -W / 2, 1, -H - 20)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-frame.BackgroundTransparency = 0.95 -- only slightly visible
+frame.BackgroundTransparency = 0.99
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Parent = gui
@@ -93,7 +93,7 @@ for index, key in ipairs(keys) do
         PAD + row * (SIZE + PAD)
     )
     button.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    button.BackgroundTransparency = 0.15
+    button.BackgroundTransparency = 0.99
     button.BorderSizePixel = 0
     button.Text = key[1]
     button.TextColor3 = Color3.new(1, 1, 1)
