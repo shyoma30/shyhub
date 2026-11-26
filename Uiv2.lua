@@ -1,5 +1,6 @@
+print("S Hub Core v2.2")
 --------------------------------------------------------------------------------
--- S Hub core  ·  v2.1
+-- S Hub core  ·  v2.2
 --------------------------------------------------------------------------------
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -3019,6 +3020,69 @@ function Hud.Build(window, cfg)
 end
 
 --------------------------------------------------------------------------------
+-- DISCORD & CREDITS TAB (built into core)
+--------------------------------------------------------------------------------
+local DISCORD_CODE = "dteHcrmBk"
+local DISCORD_URL = "https://discord.gg/" .. DISCORD_CODE
+
+function Lib:BuildDiscord()
+	local Window = Registry.window
+	if not Window or Registry._discordBuilt then return end
+	Registry._discordBuilt = true
+
+	local tab = Window:AddTab("Discord")
+
+	local discSec = tab:AddSection("Discord Server", "Left")
+	discSec:AddCard({
+		Title = "S Hub Official Discord",
+		Body = "Join our community for updates, scripts, announcements, and support!\n" .. DISCORD_URL,
+	})
+	discSec:AddButton({
+		Name = "Join Discord Server",
+		Desc = DISCORD_URL,
+		Callback = function()
+			local req = (syn and syn.request) or http_request or request
+			if req then
+				pcall(req, {
+					Url = "http://127.0.0.1:6463/rpc?v=1",
+					Method = "POST",
+					Headers = {
+						["Content-Type"] = "application/json",
+						["Origin"] = "https://discord.com",
+					},
+					Body = HttpService:JSONEncode({
+						cmd = "INVITE_BROWSER",
+						args = { code = DISCORD_CODE },
+						nonce = HttpService:GenerateGUID(false),
+					}),
+				})
+			end
+			local copy = setclipboard or toclipboard or (Clipboard and Clipboard.set)
+			if typeof(copy) == "function" then
+				pcall(copy, DISCORD_URL)
+				Window:Notify("Discord", "Invite link copied to clipboard: " .. DISCORD_URL, 4, "Success")
+			else
+				Window:Notify("Discord", "Join us at: " .. DISCORD_URL, 5, "Info")
+			end
+		end,
+	})
+
+	local teamSec = tab:AddSection("Credits", "Right")
+	teamSec:AddCard({
+		Title = "Founder",
+		Body = "@shyoma30",
+	})
+	teamSec:AddCard({
+		Title = "Co-Founder",
+		Body = "@jamal9eats",
+	})
+	teamSec:AddCard({
+		Title = "Testers",
+		Body = "• @itzzzzjosh098\n• @chaosburger66yt",
+	})
+end
+
+--------------------------------------------------------------------------------
 -- APPEARANCE TAB (call it LAST in the loader)
 --------------------------------------------------------------------------------
 function Lib:BuildAppearance()
@@ -3128,6 +3192,8 @@ function Lib:BuildAppearance()
 		task.wait(0.25)
 		Window:Notify("Error", "Something went wrong.", 3, "Error")
 	end })
+
+	self:BuildDiscord()
 end
 
 --------------------------------------------------------------------------------
@@ -3237,6 +3303,7 @@ function Lib:Mount(cfg)
 	cfg = cfg or {}
 	Lib:LoadConfig()
 	table.clear(Registry.tabs); table.clear(Registry.sections); table.clear(Registry.feats)
+	Registry._discordBuilt = false
 	local w = self:CreateWindow(cfg)
 	Registry.window = w
 	FX.Build(w)
@@ -3247,6 +3314,7 @@ function Lib:Mount(cfg)
 		end
 	end)
 	for _, def in ipairs(Registry.list) do build(def) end
+	self:BuildDiscord()
 	return w
 end
 
