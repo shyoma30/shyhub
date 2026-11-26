@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
--- S Hub core  ·  v2.2
+-- S Hub core  ·  v3.0
 --------------------------------------------------------------------------------
 local LOGO_URL = "https://i.imgur.com/CVA09x9.png"
 local DISCORD_CODE = "dteHcrmBk"
@@ -19,11 +19,8 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local MarketplaceService = game:GetService("MarketplaceService")
-local TeleportService = game:GetService("TeleportService")
 local Lighting = game:GetService("Lighting")
 local StatsService = game:GetService("Stats")
-local VirtualUser = game:GetService("VirtualUser")
 local GuiService = game:GetService("GuiService")
 
 local LocalPlayer = Players.LocalPlayer
@@ -40,8 +37,8 @@ local function detectMobile()
 end
 local IsMobile = detectMobile()
 
-local sin, cos, abs, floor, clamp, max, min, rad, random =
-	math.sin, math.cos, math.abs, math.floor, math.clamp, math.max, math.min, math.rad, math.random
+local sin, cos, abs, floor, clamp, max, min, random =
+	math.sin, math.cos, math.abs, math.floor, math.clamp, math.max, math.min, math.random
 local udim2FromScale, udim2FromOffset, udim2New = UDim2.fromScale, UDim2.fromOffset, UDim2.new
 
 --------------------------------------------------------------------------------
@@ -90,19 +87,26 @@ local Themes = {
 	Polar          = theme(c(12,20,28), c(18,30,42), c(26,42,58), c(35,55,75), c(52,80,108), c(150,235,255), c(240,250,255), c(148,182,204), c(100,180,255)),
 	Krampus        = theme(c(16,8,10), c(25,12,15), c(36,18,22), c(48,24,30), c(72,34,42), c(215,38,56), c(246,232,236), c(168,132,140), c(150,175,210)),
 	Mistletoe      = theme(c(10,22,16), c(16,33,24), c(23,46,34), c(31,60,45), c(46,86,65), c(92,220,140), c(238,250,242), c(146,184,160), c(238,68,84)),
+	Wintergreen    = theme(c(8,21,18), c(13,32,27), c(19,45,38), c(26,60,51), c(38,84,72), c(82,242,198), c(236,252,247), c(140,185,172), c(168,255,232)),
+	Sugarplum      = theme(c(19,12,26), c(28,18,38), c(40,26,54), c(53,35,71), c(76,50,102), c(216,132,255), c(248,238,255), c(175,148,196), c(255,158,218)),
+	Hearthfire     = theme(c(24,13,9), c(35,19,13), c(49,27,18), c(64,36,24), c(92,52,34), c(255,134,52), c(254,242,234), c(188,152,134), c(255,204,78)),
+	Evergreen      = theme(c(9,18,12), c(14,27,18), c(21,39,26), c(28,52,35), c(42,76,52), c(64,198,108), c(236,248,238), c(142,176,150), c(228,188,78)),
+	Silverbell     = theme(c(16,19,24), c(23,28,35), c(33,40,50), c(44,53,66), c(64,76,94), c(210,224,245), c(244,248,255), c(154,166,186), c(135,185,255)),
+	Nutcracker     = theme(c(23,11,14), c(34,16,21), c(48,23,30), c(63,31,40), c(90,44,56), c(242,192,72), c(252,244,238), c(184,152,156), c(225,52,74)),
 }
 local ThemeNames = {
 	"Eclipse", "Celestial", "Crimson", "Aurora", "Nebula", "Solar", "Starlight", "Cyberpunk", "Abyss",
 	"Midnight", "Sakura", "Ocean", "Matcha", "Dracula", "Sunset", "Vaporwave", "BloodMoon", "Mono", "Snow",
 	"Nord", "Catppuccin", "Gruvbox", "TokyoNight", "Synthwave", "Emerald", "Amethyst", "RoseGold", "Obsidian",
 	"Christmas", "Yuletide", "Frostbite", "Candy Cane", "Gingerbread", "Polar", "Krampus", "Mistletoe",
+	"Wintergreen", "Sugarplum", "Hearthfire", "Evergreen", "Silverbell", "Nutcracker",
 }
 local StyleNames = {}
 
 --------------------------------------------------------------------------------
 -- core state + helpers
 --------------------------------------------------------------------------------
-local Lib = { Themes = Themes, ThemeNames = ThemeNames, StyleNames = StyleNames, IsMobile = IsMobile, Logo = LOGO_URL, Version = "2.2" }
+local Lib = { Themes = Themes, ThemeNames = ThemeNames, StyleNames = StyleNames, IsMobile = IsMobile, Logo = LOGO_URL, Version = "3.0" }
 local State = { Theme = "Christmas", Accent = nil, BaseAccent = nil, Rounding = 1, Opacity = 1, Scale = 1, Listening = false }
 
 Lib.UI = {
@@ -321,7 +325,7 @@ local function label(parent, txt, o)
 		BackgroundTransparency = 1,
 		Text = txt,
 		Font = o.Font or FONT,
-		TextSize = o.Size or (IsMobile and 12 or 12),
+		TextSize = o.Size or 12,
 		TextXAlignment = o.AlignX or Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Center,
 		TextWrapped = o.Wrap or false,
@@ -363,12 +367,8 @@ local function hover(hit, f)
 		tween(sc, { Scale = 1 }, FAST)
 		if s then tween(s, { Color = C("Stroke"), Transparency = 0.65 }) end
 	end)
-	hit.MouseButton1Down:Connect(function()
-		tween(sc, { Scale = 0.985 }, MICRO)
-	end)
-	hit.MouseButton1Up:Connect(function()
-		tween(sc, { Scale = 1 }, SPRING)
-	end)
+	hit.MouseButton1Down:Connect(function() tween(sc, { Scale = 0.985 }, MICRO) end)
+	hit.MouseButton1Up:Connect(function() tween(sc, { Scale = 1 }, SPRING) end)
 end
 
 local function isPress(i)
@@ -436,16 +436,12 @@ local logoCallbacks = {}
 local function resolveLogo(image, cb)
 	image = (image ~= nil and image ~= "") and image or LOGO_URL
 	if image == nil or image == "" then return end
-
 	if typeof(image) == "number" or (typeof(image) == "string" and image:match("^%d+$")) then
 		return task.spawn(cb, "rbxassetid://" .. image)
 	end
 	if typeof(image) ~= "string" then return end
 	if image:match("^rbxasset") then return task.spawn(cb, image) end
-
-	if image == LOGO_URL and cachedLogoAsset then
-		return task.spawn(cb, cachedLogoAsset)
-	end
+	if image == LOGO_URL and cachedLogoAsset then return task.spawn(cb, cachedLogoAsset) end
 	table.insert(logoCallbacks, cb)
 	if logoFetching then return end
 	logoFetching = true
@@ -481,24 +477,15 @@ local function logoImage(parent, image, textObj, radius)
 	resolveLogo(image, function(asset)
 		if not parent.Parent then return end
 		local img = make("ImageLabel", {
-			Name = "LogoImage",
-			Size = udim2FromScale(1, 1),
-			Position = udim2FromScale(0, 0),
-			AnchorPoint = Vector2.new(0, 0),
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Image = asset,
-			ScaleType = Enum.ScaleType.Fit,
-			ZIndex = parent.ZIndex + 1,
-			Parent = parent,
+			Name = "LogoImage", Size = udim2FromScale(1, 1), Position = udim2FromScale(0, 0),
+			BackgroundTransparency = 1, BorderSizePixel = 0, Image = asset, ScaleType = Enum.ScaleType.Fit,
+			ZIndex = parent.ZIndex + 1, Parent = parent,
 		})
 		round(img, radius or 6)
-
 		local t0 = os.clock()
 		while img.Parent and not img.IsLoaded and os.clock() - t0 < 3 do task.wait() end
 		if not img.Parent then return end
 		if not img.IsLoaded then img:Destroy() return end
-
 		parent.BackgroundTransparency = 1
 		local ring = parent:FindFirstChildOfClass("UIStroke")
 		if ring then ring.Enabled = false end
@@ -562,10 +549,7 @@ function Section:AddCard(o)
 	local body = label(inner, o.Body or o.Content or "", { Size = 11, Role = "SubText", Wrap = true, Box = udim2New(1, 0, 0, 0), Auto = Enum.AutomaticSize.Y })
 	body.LayoutOrder = 2
 	indexItem(self, f, (o.Title or "") .. " " .. (o.Body or o.Content or ""))
-	return {
-		SetBody = function(t) body.Text = t end,
-		SetTitle = function(t) title.Text = t end,
-	}
+	return { SetBody = function(t) body.Text = t end, SetTitle = function(t) title.Text = t end }
 end
 
 function Section:AddParagraph(o)
@@ -575,28 +559,21 @@ end
 
 function Section:AddProfile(o)
 	o = o or {}
-	local username = o.Username or "User"
-	local roleText = o.Role or "Contributor"
-	local badgeText = o.Badge or "TEAM"
-	local col = o.Color
-
+	local username, roleText, badgeText, col = o.Username or "User", o.Role or "Contributor", o.Badge or "TEAM", o.Color
 	local f = card(self.Frame, 46)
 	local bar = make("Frame", { Size = udim2New(0, 2.5, 1, -14), Position = udim2FromOffset(7, 7), BorderSizePixel = 0, Parent = f })
 	pill(bar)
 	if col then bar.BackgroundColor3 = col else bind(bar, "BackgroundColor3", "Accent") end
-
 	local nameL = label(f, "@" .. username, { Font = BOLD, Size = 12, Box = udim2New(1, -100, 0, 16), Pos = udim2FromOffset(16, 7) })
 	nameL.TextTruncate = Enum.TextTruncate.AtEnd
 	local roleL = label(f, roleText, { Size = 11, Role = "SubText", Box = udim2New(1, -24, 0, 14), Pos = udim2FromOffset(16, 24) })
 	roleL.TextTruncate = Enum.TextTruncate.AtEnd
-
 	local badge = make("Frame", { AutomaticSize = Enum.AutomaticSize.X, Size = udim2FromOffset(0, 18), AnchorPoint = Vector2.new(1, 0), Position = udim2New(1, -10, 0, 7), BorderSizePixel = 0, BackgroundTransparency = 0.84, Parent = f })
 	if col then badge.BackgroundColor3 = col else bind(badge, "BackgroundColor3", "Accent") end
 	round(badge, 4)
 	make("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), Parent = badge })
 	local bl = label(badge, badgeText, { Font = BOLD, Size = 9, AlignX = Enum.TextXAlignment.Center, Box = udim2FromOffset(0, 18), Auto = Enum.AutomaticSize.X, Role = col and false or "Accent" })
 	if col then bl.TextColor3 = col end
-
 	local hit = make("TextButton", { Size = udim2FromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 3, Parent = f })
 	hover(hit, f)
 	hit.MouseButton1Click:Connect(function()
@@ -607,7 +584,6 @@ function Section:AddProfile(o)
 			if Registry.window then Registry.window:Notify("Discord", "Copied Discord username @" .. username .. " to clipboard", 2.5, "Success") end
 		end
 	end)
-
 	indexItem(self, f, username .. " " .. roleText .. " " .. badgeText)
 	return f
 end
@@ -637,18 +613,12 @@ function Section:AddButton(o)
 	local arrow = label(f, "›", { Font = BOLD, Size = 15, Role = "SubText", AlignX = Enum.TextXAlignment.Center, Box = udim2FromOffset(18, 18), Pos = udim2New(1, -25, 0.5, -9) })
 	local hit = make("TextButton", { Size = udim2FromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 3, Parent = f })
 	hover(hit, f)
-	hit.MouseEnter:Connect(function()
-		tween(arrow, { TextColor3 = C("Accent"), Position = udim2New(1, -22, 0.5, -9) }, FAST)
-	end)
-	hit.MouseLeave:Connect(function()
-		tween(arrow, { TextColor3 = C("SubText"), Position = udim2New(1, -25, 0.5, -9) }, FAST)
-	end)
+	hit.MouseEnter:Connect(function() tween(arrow, { TextColor3 = C("Accent"), Position = udim2New(1, -22, 0.5, -9) }, FAST) end)
+	hit.MouseLeave:Connect(function() tween(arrow, { TextColor3 = C("SubText"), Position = udim2New(1, -25, 0.5, -9) }, FAST) end)
 	hit.MouseButton1Click:Connect(function()
 		ripple(f)
 		tween(arrow, { Position = udim2New(1, -19, 0.5, -9) }, MICRO)
-		task.delay(0.09, function()
-			if arrow.Parent then tween(arrow, { Position = udim2New(1, -22, 0.5, -9) }, SPRING) end
-		end)
+		task.delay(0.09, function() if arrow.Parent then tween(arrow, { Position = udim2New(1, -22, 0.5, -9) }, SPRING) end end)
 		if o.Callback then task.spawn(o.Callback) end
 	end)
 	indexItem(self, f, (o.Name or "") .. " " .. (o.Desc or ""))
@@ -689,10 +659,7 @@ function Section:AddToggle(o)
 
 	local hit = make("TextButton", { Size = udim2FromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 3, Parent = f })
 	hover(hit, f)
-	hit.MouseButton1Click:Connect(function()
-		ripple(f)
-		obj.Set(not state)
-	end)
+	hit.MouseButton1Click:Connect(function() ripple(f); obj.Set(not state) end)
 	indexItem(self, f, (o.Name or "") .. " " .. (o.Desc or ""))
 	return obj
 end
@@ -728,11 +695,7 @@ function Section:AddSlider(o)
 	local obj = {}
 	local function render(instant)
 		local pct = (value - minV) / (maxV - minV)
-		if instant then
-			fill.Size = udim2FromScale(pct, 1)
-		else
-			tween(fill, { Size = udim2FromScale(pct, 1) }, MICRO)
-		end
+		if instant then fill.Size = udim2FromScale(pct, 1) else tween(fill, { Size = udim2FromScale(pct, 1) }, MICRO) end
 		if not val:IsFocused() then val.Text = string.format("%g", value) .. (o.Suffix or "") end
 	end
 	function obj.Set(v, silent)
@@ -767,20 +730,13 @@ function Section:AddSlider(o)
 	hit.MouseEnter:Connect(function() tween(knobScale, { Scale = 1.18 }, FAST) end)
 	hit.MouseLeave:Connect(function() if not dragging then tween(knobScale, { Scale = 1 }, FAST) end end)
 	hit.InputBegan:Connect(function(i)
-		if isPress(i) then
-			dragging = true
-			tween(knobScale, { Scale = 1.3 }, SPRING)
-			fromX(i.Position.X)
-		end
+		if isPress(i) then dragging = true; tween(knobScale, { Scale = 1.3 }, SPRING); fromX(i.Position.X) end
 	end)
 	connect(UserInputService.InputChanged, function(i)
 		if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then fromX(i.Position.X) end
 	end)
 	connect(UserInputService.InputEnded, function(i)
-		if isPress(i) and dragging then
-			dragging = false
-			tween(knobScale, { Scale = 1 }, SPRING)
-		end
+		if isPress(i) and dragging then dragging = false; tween(knobScale, { Scale = 1 }, SPRING) end
 	end)
 	indexItem(self, f, o.Name)
 	return obj
@@ -853,10 +809,7 @@ function Section:AddDropdown(o)
 		local top = searchable and 35 or 6
 		return listH, top, top + listH + 6
 	end
-	local function isSel(opt)
-		if multi then return current[opt] == true end
-		return opt == current
-	end
+	local function isSel(opt) return multi and (current[opt] == true) or (opt == current) end
 	local function listOut()
 		if not multi then return current end
 		local t = {}
@@ -966,10 +919,7 @@ function Section:AddDropdown(o)
 
 	if box then box:GetPropertyChangedSignal("Text"):Connect(function() if open then render() end end) end
 	reg(function(t) if open then for _, r in ipairs(rowsD) do pcall(paintRow, r, t) end end end)
-	hit.MouseButton1Click:Connect(function()
-		ripple(head)
-		setOpen(not open)
-	end)
+	hit.MouseButton1Click:Connect(function() ripple(head); setOpen(not open) end)
 	indexItem(self, container, o.Name)
 	return obj
 end
@@ -1000,12 +950,8 @@ function Section:AddColorPicker(o)
 
 	local sv = make("Frame", { Size = udim2New(1, -40, 0, 102), Position = udim2FromOffset(7, 7), BorderSizePixel = 0, BackgroundColor3 = Color3.fromHSV(h, 1, 1), Parent = panel })
 	make("UICorner", { CornerRadius = UDim.new(0, 4), Parent = sv })
-	make("Frame", {
-		Size = udim2FromScale(1, 1), BorderSizePixel = 0, BackgroundColor3 = c(255, 255, 255), Parent = sv,
-	}, { make("UICorner", { CornerRadius = UDim.new(0, 4) }), make("UIGradient", { Transparency = NumberSequence.new(0, 1) }) })
-	make("Frame", {
-		Size = udim2FromScale(1, 1), BorderSizePixel = 0, BackgroundColor3 = c(0, 0, 0), Parent = sv,
-	}, { make("UICorner", { CornerRadius = UDim.new(0, 4) }), make("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(1, 0) }) })
+	make("Frame", { Size = udim2FromScale(1, 1), BorderSizePixel = 0, BackgroundColor3 = c(255, 255, 255), Parent = sv }, { make("UICorner", { CornerRadius = UDim.new(0, 4) }), make("UIGradient", { Transparency = NumberSequence.new(0, 1) }) })
+	make("Frame", { Size = udim2FromScale(1, 1), BorderSizePixel = 0, BackgroundColor3 = c(0, 0, 0), Parent = sv }, { make("UICorner", { CornerRadius = UDim.new(0, 4) }), make("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(1, 0) }) })
 	local svCursor = make("Frame", { Size = udim2FromOffset(10, 10), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 3, Parent = sv })
 	pill(svCursor)
 	make("UIStroke", { Color = c(255, 255, 255), Thickness = 1.5, Parent = svCursor })
@@ -1051,12 +997,7 @@ function Section:AddColorPicker(o)
 		tween(hs, { Color = C("Stroke"), Transparency = 0.5 })
 		local txt = hex.Text:gsub("#", ""):gsub("%s", "")
 		local ok, col = pcall(Color3.fromHex, txt)
-		if ok and col and #txt == 6 then
-			h, s, v = col:ToHSV()
-			apply()
-		else
-			apply(true)
-		end
+		if ok and col and #txt == 6 then h, s, v = col:ToHSV(); apply() else apply(true) end
 	end)
 
 	local dragSV, dragH = false, false
@@ -1075,9 +1016,7 @@ function Section:AddColorPicker(o)
 		if i.UserInputType ~= Enum.UserInputType.MouseMovement and i.UserInputType ~= Enum.UserInputType.Touch then return end
 		if dragSV then updSV(i.Position) elseif dragH then updH(i.Position) end
 	end)
-	connect(UserInputService.InputEnded, function(i)
-		if isPress(i) then dragSV, dragH = false, false end
-	end)
+	connect(UserInputService.InputEnded, function(i) if isPress(i) then dragSV, dragH = false, false end end)
 
 	hit.MouseButton1Click:Connect(function()
 		ripple(head)
@@ -1092,10 +1031,7 @@ function Section:AddColorPicker(o)
 		end
 	end)
 
-	function obj.Set(col, silent)
-		h, s, v = col:ToHSV()
-		apply(silent)
-	end
+	function obj.Set(col, silent) h, s, v = col:ToHSV(); apply(silent) end
 	function obj.Get() return Color3.fromHSV(h, s, v) end
 	indexItem(self, container, o.Name)
 	return obj
@@ -1162,10 +1098,7 @@ function Section:AddKeybind(o)
 		tween(b, { TextColor3 = C("SubText") })
 	end)
 	indexItem(self, f, o.Name)
-	return {
-		Set = function(k) key = k; b.Text = k.Name end,
-		Get = function() return key end,
-	}
+	return { Set = function(k) key = k; b.Text = k.Name end, Get = function() return key end }
 end
 
 function Section:AddProgress(o)
@@ -1215,19 +1148,11 @@ function Section:AddThemeGallery(o)
 				Font = FONT, TextSize = 10, TextColor3 = th.Text or WHITE, TextXAlignment = Enum.TextXAlignment.Left,
 				TextTruncate = Enum.TextTruncate.AtEnd, Parent = t,
 			})
-			t.MouseEnter:Connect(function()
-				tween(t, { BackgroundColor3 = th.Hover or th.Element })
-				tween(ts, { Scale = 1.03 }, FAST)
-			end)
-			t.MouseLeave:Connect(function()
-				tween(t, { BackgroundColor3 = th.Surface })
-				tween(ts, { Scale = 1 }, FAST)
-			end)
+			t.MouseEnter:Connect(function() tween(t, { BackgroundColor3 = th.Hover or th.Element }); tween(ts, { Scale = 1.03 }, FAST) end)
+			t.MouseLeave:Connect(function() tween(t, { BackgroundColor3 = th.Surface }); tween(ts, { Scale = 1 }, FAST) end)
 			t.MouseButton1Down:Connect(function() tween(ts, { Scale = 0.96 }, MICRO) end)
 			t.MouseButton1Up:Connect(function() tween(ts, { Scale = 1.03 }, SPRING) end)
-			t.MouseButton1Click:Connect(function()
-				if o.Callback then o.Callback(name) end
-			end)
+			t.MouseButton1Click:Connect(function() if o.Callback then o.Callback(name) end end)
 			tiles[name] = { st = st, base = th.Stroke or c(60, 60, 70) }
 		end
 	end
@@ -1286,7 +1211,6 @@ function Lib:CreateWindow(cfg)
 	local key = cfg.Key or Enum.KeyCode.RightShift
 	local letter = cfg.Letter or "S"
 	local title = cfg.Title or "S Hub"
-	-- Compact footprint for both mobile and desktop
 	local W, H = IsMobile and 530 or 720, IsMobile and 315 or 430
 	local TOP_H = IsMobile and 40 or 42
 	local visible, alive = true, true
@@ -1301,7 +1225,6 @@ function Lib:CreateWindow(cfg)
 	local blur = make("BlurEffect", { Name = "SHubBlur", Size = 0, Enabled = true, Parent = Lighting })
 	table.insert(Registry.extra, blur)
 
-	----------------------------------------------------------------- frame
 	local holder = make("Frame", { Name = "Holder", Size = udim2FromOffset(W, H), AnchorPoint = Vector2.new(0.5, 0.5), Position = udim2FromScale(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 2, Parent = gui })
 	local scaler = make("UIScale", { Scale = baseScale() * 0.94, Parent = holder })
 
@@ -1380,9 +1303,8 @@ function Lib:CreateWindow(cfg)
 		end)
 	end
 
-	----------------------------------------------------------------- top bar
 	local top = make("Frame", { Size = udim2New(1, 0, 0, TOP_H), BackgroundTransparency = 1, Parent = body })
-	local logo, logoText = logoTile(top, 22, 5, letter, cfg.Image, udim2FromOffset(11, floor((TOP_H - 22) / 2)), 12)
+	local _, logoText = logoTile(top, 22, 5, letter, cfg.Image, udim2FromOffset(11, floor((TOP_H - 22) / 2)), 12)
 	local titleW = IsMobile and 130 or 200
 	local titleL = label(top, title, { Font = BOLD, Size = 13, Box = udim2FromOffset(titleW, 16), Pos = udim2FromOffset(40, 6) })
 	titleL.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1392,7 +1314,6 @@ function Lib:CreateWindow(cfg)
 	local topLine = make("Frame", { Size = udim2New(1, 0, 0, 1), Position = udim2FromOffset(0, TOP_H), BorderSizePixel = 0, BackgroundTransparency = 0.45, Parent = body })
 	bind(topLine, "BackgroundColor3", "Stroke")
 
-	-- search box
 	local searchW = IsMobile and 125 or 175
 	local search = make("Frame", { Size = udim2FromOffset(searchW, 24), Position = udim2New(1, -(searchW + 100), 0, floor((TOP_H - 24) / 2)), BorderSizePixel = 0, Parent = top })
 	bind(search, "BackgroundColor3", "Surface")
@@ -1449,7 +1370,6 @@ function Lib:CreateWindow(cfg)
 		return f
 	end
 
-	----------------------------------------------------------------- dialog
 	function Window:Dialog(o)
 		o = o or {}
 		local overlay = make("TextButton", { Name = "Dialog", Text = "", AutoButtonColor = false, Size = udim2FromScale(1, 1), BackgroundColor3 = c(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 50, Parent = body })
@@ -1522,7 +1442,6 @@ function Lib:CreateWindow(cfg)
 	end)
 	makeDraggable(top, holder)
 
-	----------------------------------------------------------------- sidebar
 	local sideW = IsMobile and 120 or 148
 	local side = make("Frame", { Size = udim2New(0, sideW, 1, -(TOP_H + 1)), Position = udim2FromOffset(0, TOP_H + 1), BorderSizePixel = 0, Parent = body })
 	bind(side, "BackgroundColor3", "Surface")
@@ -1564,7 +1483,6 @@ function Lib:CreateWindow(cfg)
 
 	local pages = make("Frame", { Size = udim2New(1, -(sideW + 18), 1, -(TOP_H + 14)), Position = udim2FromOffset(sideW + 10, TOP_H + 8), BackgroundTransparency = 1, ClipsDescendants = true, Parent = body })
 
-	----------------------------------------------------------------- search filter
 	local query = ""
 	local currentTab
 	local function applyFilter(tab)
@@ -1593,7 +1511,6 @@ function Lib:CreateWindow(cfg)
 		applyFilter(currentTab)
 	end)
 
-	----------------------------------------------------------------- tabs
 	local tabs = {}
 	function Window:AddTab(name, icon)
 		local tab = { selected = false, hov = false, items = {}, sections = {}, name = name }
@@ -1664,11 +1581,7 @@ function Lib:CreateWindow(cfg)
 
 		local function choose()
 			for _, t in ipairs(tabs) do
-				if t ~= tab then
-					t.selected = false
-					t.page.Visible = false
-					t.paint(FAST)
-				end
+				if t ~= tab then t.selected = false; t.page.Visible = false; t.paint(FAST) end
 			end
 			tab.selected = true
 			currentTab = tab
@@ -1679,27 +1592,16 @@ function Lib:CreateWindow(cfg)
 				local sc = sec.Scale
 				if sc then
 					sc.Scale = 0.97
-					task.delay((idx - 1) * 0.02, function()
-						if sc.Parent then tween(sc, { Scale = 1 }, BACK) end
-					end)
+					task.delay((idx - 1) * 0.02, function() if sc.Parent then tween(sc, { Scale = 1 }, BACK) end end)
 				end
 			end
 			paint(FAST)
 			applyFilter(tab)
 		end
 		tab.choose = choose
-		btn.MouseButton1Click:Connect(function()
-			ripple(btn)
-			choose()
-		end)
-		btn.MouseEnter:Connect(function()
-			tab.hov = true
-			paint()
-		end)
-		btn.MouseLeave:Connect(function()
-			tab.hov = false
-			paint()
-		end)
+		btn.MouseButton1Click:Connect(function() ripple(btn); choose() end)
+		btn.MouseEnter:Connect(function() tab.hov = true; paint() end)
+		btn.MouseLeave:Connect(function() tab.hov = false; paint() end)
 		if #tabs == 1 then choose() end
 
 		function tab:AddSection(stitle, sideName)
@@ -1737,7 +1639,6 @@ function Lib:CreateWindow(cfg)
 		return false
 	end
 
-	----------------------------------------------------------------- launcher ("S")
 	local lSize = IsMobile and 48 or 42
 	launcher = make("TextButton", {
 		Name = "Launcher", Size = udim2FromOffset(lSize, lSize), Position = udim2New(0, 18, 0, 72), Text = letter, Font = BOLD,
@@ -1750,23 +1651,14 @@ function Lib:CreateWindow(cfg)
 	logoImage(launcher, cfg.Image, launcher, 8)
 	launchScale = make("UIScale", { Parent = launcher })
 	local lDrag = makeDraggable(launcher, launcher)
-	launcher.MouseEnter:Connect(function()
-		tween(launcher, { BackgroundColor3 = C("Hover") })
-		tween(launchScale, { Scale = 1.08 }, SPRING)
-	end)
-	launcher.MouseLeave:Connect(function()
-		tween(launcher, { BackgroundColor3 = C("Surface") })
-		tween(launchScale, { Scale = 1 }, FAST)
-	end)
-	launcher.Activated:Connect(function()
-		if not lDrag.moved() and not visible then setVisible(true) end
-	end)
+	launcher.MouseEnter:Connect(function() tween(launcher, { BackgroundColor3 = C("Hover") }); tween(launchScale, { Scale = 1.08 }, SPRING) end)
+	launcher.MouseLeave:Connect(function() tween(launcher, { BackgroundColor3 = C("Surface") }); tween(launchScale, { Scale = 1 }, FAST) end)
+	launcher.Activated:Connect(function() if not lDrag.moved() and not visible then setVisible(true) end end)
 
 	function Window:AddMobileButton() return { Set = function() end, Get = function() return false end } end
 	function Window:SetMobileButtons() end
 	function Window:SetMobileSize() end
 
-	----------------------------------------------------------------- toasts + stats
 	local toastW = IsMobile and 235 or 270
 	local toasts = make("Frame", { Size = udim2New(0, toastW, 1, -28), AnchorPoint = Vector2.new(1, 0), Position = udim2New(1, -14, 0, 14), BackgroundTransparency = 1, ZIndex = 10, Parent = gui })
 	make("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = toasts })
@@ -1836,7 +1728,6 @@ function Lib:CreateWindow(cfg)
 		end
 	end)
 
-	----------------------------------------------------------------- animator
 	local clock, rbAcc = 0, 0
 	connect(RunService.Heartbeat, function(dt)
 		clock += dt
@@ -1847,9 +1738,7 @@ function Lib:CreateWindow(cfg)
 				if e.g.Parent then e.g.Rotation = (rot + e.ofs) % 360 else table.remove(spinners, i) end
 			end
 		end
-		if wash.Visible and visible then
-			washGrad.Rotation = 35 + sin(clock * 0.25) * 18
-		end
+		if wash.Visible and visible then washGrad.Rotation = 35 + sin(clock * 0.25) * 18 end
 		if UI.look.rainbow then
 			rbAcc += dt
 			if rbAcc >= 0.08 then
@@ -1860,13 +1749,11 @@ function Lib:CreateWindow(cfg)
 		end
 	end)
 
-	----------------------------------------------------------------- toggle key
 	connect(UserInputService.InputBegan, function(i, processed)
 		if processed or State.Listening then return end
 		if i.KeyCode == key then setVisible(not visible) end
 	end)
 
-	----------------------------------------------------------------- window api
 	function Window:SetVisible(v) setVisible(v) end
 	function Window:Toggle() setVisible(not visible) end
 	function Window:IsVisible() return visible end
@@ -1892,10 +1779,7 @@ function Lib:CreateWindow(cfg)
 	end
 	function Window:SetRainbow(on)
 		UI.look.rainbow = on and true or false
-		if not on then
-			State.Accent = State.BaseAccent
-			refreshAll(SLOW)
-		end
+		if not on then State.Accent = State.BaseAccent; refreshAll(SLOW) end
 		saveSoon()
 	end
 	function Window:SetOpacity(x)
@@ -1922,11 +1806,7 @@ function Lib:CreateWindow(cfg)
 		if visible then scaler.Scale = baseScale() end
 		saveSoon()
 	end
-	function Window:SetBorder(on)
-		UI.look.border = on and true or false
-		refreshAll(false)
-		saveSoon()
-	end
+	function Window:SetBorder(on) UI.look.border = on and true or false; refreshAll(false); saveSoon() end
 	function Window:SetGlow(on)
 		UI.look.glow = on and true or false
 		wash.Visible = UI.look.glow
@@ -1938,23 +1818,13 @@ function Lib:CreateWindow(cfg)
 		tween(blur, { Size = (visible and UI.look.blur) and 12 or 0 }, SLOW)
 		saveSoon()
 	end
-	function Window:SetRipple(on)
-		UI.look.ripple = on and true or false
-		saveSoon()
-	end
+	function Window:SetRipple(on) UI.look.ripple = on and true or false; saveSoon() end
 	function Window:SetLauncher(text, size)
-		if text and text ~= "" then
-			launcher.Text = text
-			logoText.Text = text
-		end
-		if size then
-			launcher.Size = udim2FromOffset(size, size)
-			launcher.TextSize = floor(size * 0.44)
-		end
+		if text and text ~= "" then launcher.Text = text; logoText.Text = text end
+		if size then launcher.Size = udim2FromOffset(size, size); launcher.TextSize = floor(size * 0.44) end
 	end
 	function Window:SetFPSCounter(on) statLabel.Visible = on end
 
-	----------------------------------------------------------------- intro + open animation
 	local function openAnim()
 		if not alive or not visible then return end
 		scaler.Scale = baseScale() * 0.94
@@ -2023,6 +1893,12 @@ local FXStyles = {
 	["Festive Garland"] = { glyphs = { "❄", "❅", "❆", "✦", "🎄", "🎁" }, textColors = { c(255,255,255), c(235,72,82), c(64,212,120), c(245,204,96) }, size = {11,18}, vx = {-0.012,0.012}, vy = {0.028,0.065}, sway = 0.016, spin = 32, twinkle = true, count = 52, vig = c(24,10,14), deco = "christmas" },
 	["North Pole Aurora"] = { colors = { c(110,255,195), c(120,210,255), c(255,235,165), c(255,120,160) }, size = {2,5}, vx = {-0.01,0.01}, vy = {0.018,0.05}, sway = 0.018, glow = true, twinkle = true, shooting = true, count = 75, vig = c(8,32,28), deco = "christmas" },
 	["Candy Cane Swirl"] = { glyphs = { "🍬", "🍭", "❄", "✦" }, textColors = { c(255,75,95), c(255,245,248), c(255,180,195), c(120,240,175) }, size = {12,20}, vx = {-0.02,0.02}, vy = {0.035,0.075}, sway = 0.028, spin = 55, twinkle = true, count = 46, vig = c(38,10,18), deco = "christmas" },
+	["Gingerbread Bakery"] = { glyphs = { "🍪", "🥨", "🥛", "✦", "❄" }, textColors = { c(232,164,96), c(255,236,204), c(255,112,118), c(140,235,175) }, size = {11,19}, vx = {-0.012,0.012}, vy = {0.026,0.064}, sway = 0.02, spin = 36, twinkle = true, count = 48, vig = c(34,20,10), deco = "christmas" },
+	["Silent Night Starlight"] = { colors = { c(255,248,215), c(195,225,255), c(255,215,125) }, glyphs = { "✦", "✧", "⋆", "❄" }, textColors = { c(255,236,165), c(220,238,255), c(255,255,255) }, size = {9,17}, vx = {-0.006,0.006}, vy = {0.015,0.042}, sway = 0.012, spin = 18, glow = true, twinkle = true, shooting = true, count = 68, vig = c(8,14,34), deco = "christmas" },
+	["Mistletoe Kisses"] = { glyphs = { "🌿", "🍒", "💖", "✦", "❄" }, textColors = { c(86,225,138), c(245,68,92), c(255,175,195), c(255,245,248) }, size = {11,19}, vx = {-0.015,0.015}, vy = {0.028,0.065}, sway = 0.024, spin = 34, twinkle = true, count = 50, vig = c(12,32,20), deco = "christmas" },
+	["Arctic Diamond Dust"] = { colors = { c(255,255,255), c(170,238,255), c(210,248,255) }, glyphs = { "✧", "❅", "⋆", "·" }, textColors = { c(255,255,255), c(175,242,255), c(130,215,255) }, size = {8,15}, vx = {-0.01,0.01}, vy = {0.02,0.052}, sway = 0.015, spin = 28, glow = true, twinkle = true, count = 88, vig = c(10,28,46), deco = "aurora" },
+	["Cozy Hearth Embers"] = { colors = { c(255,148,48), c(255,92,28), c(255,216,112), c(238,58,48) }, glyphs = { "✦", "•", "⋆" }, textColors = { c(255,178,72), c(255,112,42), c(255,232,155) }, size = {7,14}, vx = {-0.014,0.014}, vy = {-0.095,-0.032}, sway = 0.026, glow = true, twinkle = true, count = 66, vig = c(48,16,6), deco = "christmas" },
+	["Sugarplum Fairy"] = { colors = { c(225,155,255), c(255,165,225), c(175,225,255), c(255,240,185) }, glyphs = { "✦", "✧", "🦋", "❄", "⋆" }, textColors = { c(235,175,255), c(255,180,230), c(255,245,200), c(190,235,255) }, size = {10,18}, vx = {-0.014,0.014}, vy = {-0.028,0.028}, sway = 0.028, wander = true, spin = 24, glow = true, twinkle = true, shooting = true, count = 62, vig = c(28,12,42), deco = "aurora" },
 	["Frost Snowfall"] = { colors = { c(255,255,255), c(190,225,255) }, size = {2,6}, vx = {-0.012,0.012}, vy = {0.035,0.09}, sway = 0.015, glow = true, count = 80, vig = c(20,42,76) },
 	["Spooky Halloween"] = { colors = { c(255,140,30), c(255,90,20), c(170,90,255), c(255,205,90) }, size = {3,7}, vx = {-0.012,0.012}, vy = {-0.07,-0.025}, sway = 0.02, glow = true, count = 50, vig = c(46,10,64), deco = "halloween" },
 	["Celestial Stardust"] = { colors = { c(255,255,255), c(170,200,255), c(255,225,150) }, size = {2,5}, vx = {-0.004,0.004}, vy = {-0.012,-0.004}, sway = 0.006, glow = true, twinkle = true, count = 70, vig = c(8,12,44), shooting = true },
@@ -2169,9 +2045,7 @@ function FX.Build(window)
 			D(crater, "BackgroundTransparency", 0.58)
 		end
 		table.insert(ticks, function(_, t)
-			for i, it in ipairs(moonHalos) do
-				it.base = 0.915 + 0.015 * i + 0.025 * (0.5 + 0.5 * sin(t * 0.9 + i))
-			end
+			for i, it in ipairs(moonHalos) do it.base = 0.915 + 0.015 * i + 0.025 * (0.5 + 0.5 * sin(t * 0.9 + i)) end
 		end)
 
 		for i = 1, 3 do
@@ -2195,10 +2069,7 @@ function FX.Build(window)
 		local sx, sy = -0.18, 0.19
 		table.insert(ticks, function(dt, t)
 			sx += 0.022 * dt * fx.speed
-			if sx > 1.22 then
-				sx = -0.22
-				sy = 0.14 + random() * 0.14
-			end
+			if sx > 1.22 then sx = -0.22; sy = 0.14 + random() * 0.14 end
 			local bob = sin(t * 2.1) * 0.014
 			local pos = udim2FromScale(sx, sy + bob)
 			sleigh.Position = pos
@@ -2206,31 +2077,139 @@ function FX.Build(window)
 			sleighGlow.inst.Position = pos
 		end)
 
-		local wire = make("Frame", { Size = udim2New(1, 0, 0, 1), Position = udim2FromOffset(0, floor(14 * u)), BackgroundColor3 = c(32, 44, 36), BorderSizePixel = 0, ZIndex = 4, Parent = layer })
-		D(wire, "BackgroundTransparency", 0.35)
+		-- Multi-swag festive garland wire + realistic C9 fairy bulbs
+		local swagCount = IsMobile and 4 or 6
+		local sagDepth = floor(22 * u)
+		local topY = floor(4 * u)
+		local segsPerSwag = IsMobile and 7 or 9
+		local totalSegs = swagCount * segsPerSwag
 
-		local bulbPalette = { c(245, 68, 76), c(56, 214, 124), c(255, 206, 84), c(88, 178, 255), c(215, 115, 255) }
-		local bulbCount = IsMobile and 16 or 24
-		for i = 1, bulbCount do
-			local bx = (i - 0.5) / bulbCount
-			local sag = sin((i - 1) / (bulbCount - 1) * math.pi) * 10 * u
-			local by = floor(14 * u + sag)
-			local col = bulbPalette[(i - 1) % #bulbPalette + 1]
+		local function wireYAt(xNorm)
+			local localT = (xNorm * swagCount) % 1
+			return topY + sin(localT * math.pi) * sagDepth
+		end
 
-			local cord = make("Frame", { Size = udim2FromOffset(1, max(2, floor(sag))), AnchorPoint = Vector2.new(0.5, 0), Position = udim2New(bx, 0, 0, floor(14 * u)), BackgroundColor3 = c(40, 52, 44), BorderSizePixel = 0, ZIndex = 4, Parent = layer })
-			D(cord, "BackgroundTransparency", 0.45)
+		for s = 0, totalSegs - 1 do
+			local x0 = s / totalSegs
+			local x1 = (s + 1) / totalSegs
+			local y0 = wireYAt(x0)
+			local y1 = wireYAt(x1)
+			local xm = (x0 + x1) * 0.5
+			local ym = (y0 + y1) * 0.5
+			local dx = (x1 - x0) * V.X
+			local dy = y1 - y0
+			local len = math.sqrt(dx * dx + dy * dy) + 1.5
+			local ang = math.deg(math.atan2(dy, dx))
+			local wSeg = make("Frame", {
+				Size = udim2FromOffset(floor(len + 0.5), max(2, floor(2 * u))),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = udim2New(xm, 0, 0, floor(ym + 0.5)),
+				Rotation = ang,
+				BackgroundColor3 = c(22, 46, 30),
+				BorderSizePixel = 0,
+				ZIndex = 4,
+				Parent = layer,
+			})
+			D(wSeg, "BackgroundTransparency", 0.2)
+		end
 
-			local halo = disc(layer, 22 * u, udim2New(bx, 0, 0, by + floor(3 * u)), col, 3)
-			local haloIt = D(halo, "BackgroundTransparency", 0.85)
-			local bulb = disc(layer, 7 * u, udim2New(bx, 0, 0, by + floor(3 * u)), col, 4)
-			local bulbIt = D(bulb, "BackgroundTransparency", 0.08)
+		for k = 0, swagCount do
+			local kx = clamp(k / swagCount, 0.008, 0.992)
+			local knot = glyph(layer, "🎀", 13 * u, 5)
+			knot.Position = udim2New(kx, 0, 0, topY + floor(3 * u))
+			D(knot, "TextTransparency", 0.08)
+		end
 
-			local phase = i * 0.85
-			table.insert(ticks, function(_, t)
-				local pulse = 0.5 + 0.5 * sin(t * 2.5 + phase)
-				haloIt.base = 0.75 + 0.17 * (1 - pulse)
-				bulbIt.base = 0.04 + 0.28 * (1 - pulse)
-			end)
+		local bulbPalette = {
+			c(255, 58, 70),
+			c(46, 224, 118),
+			c(255, 212, 72),
+			c(72, 182, 255),
+			c(255, 132, 48),
+			c(216, 108, 255),
+		}
+		local bulbsPerSwag = IsMobile and 4 or 5
+		local bIdx = 0
+		for sw = 0, swagCount - 1 do
+			for bi = 1, bulbsPerSwag do
+				bIdx += 1
+				local idx = bIdx
+				local localT = (bi - 0.5) / bulbsPerSwag
+				local bx = (sw + localT) / swagCount
+				local wy = floor(wireYAt(bx) + 0.5)
+				local drop = floor((4 + (idx % 2) * 2) * u)
+				local col = bulbPalette[(idx - 1) % #bulbPalette + 1]
+				local coreCol = col:Lerp(WHITE, 0.58)
+
+				local dropWire = make("Frame", {
+					Size = udim2FromOffset(max(1, floor(1.3 * u)), drop),
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = udim2New(bx, 0, 0, wy),
+					BackgroundColor3 = c(26, 48, 34),
+					BorderSizePixel = 0,
+					ZIndex = 4,
+					Parent = layer,
+				})
+				D(dropWire, "BackgroundTransparency", 0.22)
+
+				local sockW, sockH = max(3, floor(4.5 * u)), max(3, floor(3.5 * u))
+				local socket = make("Frame", {
+					Size = udim2FromOffset(sockW, sockH),
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = udim2New(bx, 0, 0, wy + drop - 1),
+					BackgroundColor3 = c(34, 62, 42),
+					BorderSizePixel = 0,
+					ZIndex = 5,
+					Parent = layer,
+				})
+				make("UICorner", { CornerRadius = UDim.new(0, 1), Parent = socket })
+				D(socket, "BackgroundTransparency", 0.12)
+
+				local bulbW, bulbH = max(6, floor(7.5 * u)), max(9, floor(11.5 * u))
+				local bulbCenterY = wy + drop + sockH + floor(bulbH * 0.42)
+
+				local outerHalo = disc(layer, floor(30 * u), udim2New(bx, 0, 0, bulbCenterY), col, 3)
+				local outerIt = D(outerHalo, "BackgroundTransparency", 0.88)
+
+				local innerHalo = disc(layer, floor(16 * u), udim2New(bx, 0, 0, bulbCenterY), col, 4)
+				local innerIt = D(innerHalo, "BackgroundTransparency", 0.72)
+
+				local bulb = make("Frame", {
+					Size = udim2FromOffset(bulbW, bulbH),
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = udim2New(bx, 0, 0, wy + drop + sockH - 1),
+					BackgroundColor3 = col,
+					BorderSizePixel = 0,
+					ZIndex = 5,
+					Parent = layer,
+				})
+				pill(bulb)
+				local bulbIt = D(bulb, "BackgroundTransparency", 0.04)
+
+				local filament = make("Frame", {
+					Size = udim2FromOffset(max(2, floor(bulbW * 0.46)), max(3, floor(bulbH * 0.48))),
+					AnchorPoint = Vector2.new(0.5, 0.45),
+					Position = udim2FromScale(0.5, 0.48),
+					BackgroundColor3 = coreCol,
+					BorderSizePixel = 0,
+					ZIndex = 6,
+					Parent = bulb,
+				})
+				pill(filament)
+				local filIt = D(filament, "BackgroundTransparency", 0.15)
+
+				table.insert(ticks, function(_, t)
+					local wave = 0.5 + 0.5 * sin(t * 2.8 - idx * 0.75)
+					local twinkle = 0.5 + 0.5 * sin(t * 5.2 + idx * 1.9)
+					local br = clamp(wave * 0.78 + twinkle * 0.22, 0, 1)
+					outerIt.base = 0.80 + 0.15 * (1 - br)
+					innerIt.base = 0.56 + 0.28 * (1 - br)
+					bulbIt.base = 0.02 + 0.22 * (1 - br)
+					filIt.base = 0.06 + 0.52 * (1 - br)
+					local swayAng = sin(t * 1.7 + idx * 0.6) * 4.5
+					bulb.Rotation = swayAng
+				end)
+			end
 		end
 
 		local baubleSpecs = {
@@ -2244,21 +2223,22 @@ function FX.Build(window)
 		for i, b in ipairs(baubleSpecs) do
 			local lenPx = floor(b.len * u)
 			local rPx = floor(b.r * u)
+			local anchorY = floor(wireYAt(b.x) + 0.5)
 			local str = make("Frame", {
 				Size = udim2FromOffset(1, lenPx), AnchorPoint = Vector2.new(0.5, 0),
-				Position = udim2New(b.x, 0, 0, floor(14 * u)), BackgroundColor3 = c(210, 190, 140), BorderSizePixel = 0, ZIndex = 3, Parent = layer,
+				Position = udim2New(b.x, 0, 0, anchorY), BackgroundColor3 = c(210, 190, 140), BorderSizePixel = 0, ZIndex = 3, Parent = layer,
 			})
 			D(str, "BackgroundTransparency", 0.45)
-			local bHalo = disc(layer, rPx * 2.4, udim2New(b.x, 0, 0, floor(14 * u) + lenPx), b.col, 3)
+			local bHalo = disc(layer, rPx * 2.4, udim2New(b.x, 0, 0, anchorY + lenPx), b.col, 3)
 			D(bHalo, "BackgroundTransparency", 0.86)
-			local ball = disc(layer, rPx, udim2New(b.x, 0, 0, floor(14 * u) + lenPx), b.col, 4)
+			local ball = disc(layer, rPx, udim2New(b.x, 0, 0, anchorY + lenPx), b.col, 4)
 			D(ball, "BackgroundTransparency", 0.06)
 			local shine = disc(ball, max(3, floor(rPx * 0.3)), udim2FromScale(0.32, 0.32), WHITE, 5)
 			D(shine, "BackgroundTransparency", 0.35)
 
 			table.insert(ticks, function(_, t)
 				local swayPx = floor(sin(t * 1.4 + i * 1.1) * 5 * u)
-				local yPos = floor(14 * u) + lenPx
+				local yPos = anchorY + lenPx
 				ball.Position = udim2New(b.x, swayPx, 0, yPos)
 				bHalo.Position = udim2New(b.x, swayPx, 0, yPos)
 			end)
@@ -2277,13 +2257,9 @@ function FX.Build(window)
 			{ x = 0.50, w = 1.12, h = 32 },
 		}) do
 			local sb = make("Frame", {
-				Size = udim2New(bank.w, 0, 0, floor(bank.h * u)),
-				AnchorPoint = Vector2.new(0.5, 1),
-				Position = udim2New(bank.x, 0, 1, floor(12 * u)),
-				BackgroundColor3 = c(234, 244, 254),
-				BorderSizePixel = 0,
-				ZIndex = 3,
-				Parent = layer,
+				Size = udim2New(bank.w, 0, 0, floor(bank.h * u)), AnchorPoint = Vector2.new(0.5, 1),
+				Position = udim2New(bank.x, 0, 1, floor(12 * u)), BackgroundColor3 = c(234, 244, 254),
+				BorderSizePixel = 0, ZIndex = 3, Parent = layer,
 			})
 			pill(sb)
 			make("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ kp(0, 0.22), kp(1, 0.04) }), Parent = sb })
@@ -2300,9 +2276,7 @@ function FX.Build(window)
 			local tr = glyph(layer, "🎄", sz, 4)
 			tr.Position = pos
 			D(tr, "TextTransparency", 0.06)
-			table.insert(ticks, function(_, t)
-				glow.base = 0.86 + 0.055 * sin(t * 3.1 + i)
-			end)
+			table.insert(ticks, function(_, t) glow.base = 0.86 + 0.055 * sin(t * 3.1 + i) end)
 		end
 
 		local props = {
@@ -2321,9 +2295,7 @@ function FX.Build(window)
 			item.Position = pos
 			D(item, "TextTransparency", 0.06)
 			if pr.sway then
-				table.insert(ticks, function(_, t)
-					item.Rotation = sin(t * 1.8 + i * 1.5) * 6
-				end)
+				table.insert(ticks, function(_, t) item.Rotation = sin(t * 1.8 + i * 1.5) * 6 end)
 			end
 		end
 
@@ -2332,9 +2304,7 @@ function FX.Build(window)
 		local wreath = glyph(layer, "🎀", 24 * u, 4)
 		wreath.Position = wreathPos
 		D(wreath, "TextTransparency", 0.12)
-		table.insert(ticks, function(_, t)
-			hearthGlow.base = 0.85 + 0.05 * sin(t * 4.2)
-		end)
+		table.insert(ticks, function(_, t) hearthGlow.base = 0.85 + 0.05 * sin(t * 4.2) end)
 	end
 
 	function Deco.halloween(layer)
@@ -2374,9 +2344,7 @@ function FX.Build(window)
 			make("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ kp(0, 1), kp(0.55, 0.2), kp(1, 0) }), Parent = band })
 			D(band, "BackgroundTransparency", 0.84 + i * 0.03)
 			local y = 1 - (i - 1) * 0.05
-			table.insert(ticks, function(_, t)
-				band.Position = udim2FromScale(0.5 + 0.07 * sin(t * 0.12 * fx.speed + i * 2), y)
-			end)
+			table.insert(ticks, function(_, t) band.Position = udim2FromScale(0.5 + 0.07 * sin(t * 0.12 * fx.speed + i * 2), y) end)
 		end
 
 		for _ = 1, 6 do
@@ -2413,9 +2381,7 @@ function FX.Build(window)
 			local p = glyph(layer, "🎃", s, 4)
 			p.Position = py
 			D(p, "TextTransparency", 0.04)
-			table.insert(ticks, function(_, t)
-				gi.base = 0.84 + 0.05 * sin(t * 7 + i) + 0.03 * sin(t * 13.3 + i * 2)
-			end)
+			table.insert(ticks, function(_, t) gi.base = 0.84 + 0.05 * sin(t * 7 + i) + 0.03 * sin(t * 13.3 + i * 2) end)
 		end
 
 		local w1 = glyph(layer, "🕸", 120 * u, 4)
@@ -2452,9 +2418,7 @@ function FX.Build(window)
 		local scan = make("Frame", { Size = udim2New(1, 0, 0, 3), BackgroundColor3 = c(0, 240, 255), BorderSizePixel = 0, ZIndex = 3, Parent = layer })
 		make("UIGradient", { Transparency = NumberSequence.new({ kp(0, 1), kp(0.5, 0.2), kp(1, 1) }), Parent = scan })
 		D(scan, "BackgroundTransparency", 0.45)
-		table.insert(FX.decoTicks, function(_, t)
-			scan.Position = udim2FromScale(0, (t * 0.1 * fx.speed) % 1.1 - 0.05)
-		end)
+		table.insert(FX.decoTicks, function(_, t) scan.Position = udim2FromScale(0, (t * 0.1 * fx.speed) % 1.1 - 0.05) end)
 	end
 
 	function Deco.aurora(layer)
@@ -2505,9 +2469,7 @@ function FX.Build(window)
 		for i, n in ipairs(nebCols) do
 			local cloud = disc(layer, n[3] * u, n[2], n[1], 3)
 			local it = D(cloud, "BackgroundTransparency", 0.92)
-			table.insert(FX.decoTicks, function(_, t)
-				it.base = 0.90 + 0.04 * sin(t * 0.45 + i * 1.8)
-			end)
+			table.insert(FX.decoTicks, function(_, t) it.base = 0.90 + 0.04 * sin(t * 0.45 + i * 1.8) end)
 		end
 	end
 
@@ -2522,9 +2484,7 @@ function FX.Build(window)
 			pill(ring)
 			local st = make("UIStroke", { Thickness = 1.2, Color = i == 1 and c(175, 120, 255) or c(100, 220, 255), Parent = ring })
 			local it = D(st, "Transparency", 0.84)
-			table.insert(FX.decoTicks, function(_, t)
-				it.base = 0.80 + 0.08 * sin(t * 0.9 + i)
-			end)
+			table.insert(FX.decoTicks, function(_, t) it.base = 0.80 + 0.08 * sin(t * 0.9 + i) end)
 		end
 	end
 
@@ -2673,14 +2633,8 @@ function FX.Build(window)
 		local spd = fx.speed
 		local dtSpd = dt * spd
 		local baseAlpha = fx.opacity * A
-		local stSway = st.sway
-		local stSpin = st.spin
-		local stTwinkle = st.twinkle
-		local stWander = st.wander
-		local stFlicker = st.flicker
-		local stHollow = st.hollow
-		local glyphs = st.glyphs
-		local parts = FX.parts
+		local stSway, stSpin, stTwinkle, stWander, stFlicker, stHollow, glyphs, parts =
+			st.sway, st.spin, st.twinkle, st.wander, st.flicker, st.hollow, st.glyphs, FX.parts
 
 		for i = 1, #parts do
 			local p = parts[i]
@@ -2782,13 +2736,8 @@ function Hud.Build(window, cfg)
 		bind(l, "TextColor3", role)
 		return l
 	end
-	local function iconBox(parent)
-		return make("Frame", { Size = udim2FromOffset(13, 13), BackgroundTransparency = 1, LayoutOrder = 1, Parent = parent })
-	end
-	local function acc(inst)
-		bind(inst, "BackgroundColor3", "Accent")
-		return inst
-	end
+	local function iconBox(parent) return make("Frame", { Size = udim2FromOffset(13, 13), BackgroundTransparency = 1, LayoutOrder = 1, Parent = parent }) end
+	local function acc(inst) bind(inst, "BackgroundColor3", "Accent"); return inst end
 
 	local sId = seg("id", 1)
 	segs.id.sep.Visible = false
@@ -2881,7 +2830,6 @@ function Hud.Build(window, cfg)
 		end
 	end)
 
-	------------------------------------------------------------------ keybind panel
 	local panel = make("Frame", { Name = "Keybinds", Size = udim2FromOffset(210, 160), AnchorPoint = Vector2.new(0, 0.5), Position = udim2New(0, 14, 0.5, 0), BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 2, Parent = gui })
 	bind(panel, "BackgroundColor3", "Surface")
 	round(panel, 6)
@@ -2922,11 +2870,7 @@ function Hud.Build(window, cfg)
 		panel.BackgroundTransparency = 1 - K.opacity
 		panelScale.Scale = K.scale
 	end
-	badge.MouseButton1Click:Connect(function()
-		K.collapsed = not K.collapsed
-		relayout()
-		saveSoon()
-	end)
+	badge.MouseButton1Click:Connect(function() K.collapsed = not K.collapsed; relayout(); saveSoon() end)
 
 	local function listenKey(b, o)
 		if State.Listening then return end
@@ -2982,9 +2926,7 @@ function Hud.Build(window, cfg)
 			local kn = make("Frame", { Size = udim2FromOffset(9, 9), Position = udim2FromOffset(2, 2), BackgroundColor3 = c(245, 245, 250), BorderSizePixel = 0, Parent = tr })
 			pill(kn)
 			local on = false
-			local function paintT(t)
-				tween(tr, { BackgroundColor3 = on and C("Accent") or C("Stroke") }, t)
-			end
+			local function paintT(t) tween(tr, { BackgroundColor3 = on and C("Accent") or C("Stroke") }, t) end
 			reg(paintT)
 			function setOn(v)
 				on = v and true or false
@@ -2997,9 +2939,7 @@ function Hud.Build(window, cfg)
 		end
 		local kb = chip(keyText(o.getKey()), 2)
 		kb.MouseButton1Click:Connect(function() listenKey(kb, o) end)
-		if o.kind ~= "toggle" then
-			chip("Run", 3, true).MouseButton1Click:Connect(o.run)
-		end
+		if o.kind ~= "toggle" then chip("Run", 3, true).MouseButton1Click:Connect(o.run) end
 		row.refresh = function() kb.Text = keyText(o.getKey()) end
 		row.setOn = setOn
 		table.insert(rows, row)
@@ -3043,10 +2983,7 @@ function Hud.Build(window, cfg)
 			end,
 			run = function() if h.Run then h.Run() end end,
 		})
-		if row.setOn then
-			row.setOn(h.state)
-			table.insert(h.sync, row.setOn)
-		end
+		if row.setOn then row.setOn(h.state); table.insert(h.sync, row.setOn) end
 		relayout()
 	end
 
@@ -3059,17 +2996,8 @@ function Hud.Build(window, cfg)
 		end
 	end)
 
-	function Hud.SetStat(k, v)
-		S[k] = v
-		if k == "preset" then placeStats() end
-		applyStats()
-		saveSoon()
-	end
-	function Hud.SetKeys(k, v)
-		K[k] = v
-		relayout()
-		saveSoon()
-	end
+	function Hud.SetStat(k, v) S[k] = v; if k == "preset" then placeStats() end; applyStats(); saveSoon() end
+	function Hud.SetKeys(k, v) K[k] = v; relayout(); saveSoon() end
 	function Hud.ResetStats() placeStats() end
 	function Hud.ResetKeys() tween(panel, { Position = udim2New(0, 14, 0.5, 0) }, BACK) end
 
@@ -3087,15 +3015,8 @@ local function joinDiscord(Window)
 		pcall(req, {
 			Url = "http://127.0.0.1:6463/rpc?v=1",
 			Method = "POST",
-			Headers = {
-				["Content-Type"] = "application/json",
-				["Origin"] = "https://discord.com",
-			},
-			Body = HttpService:JSONEncode({
-				cmd = "INVITE_BROWSER",
-				args = { code = DISCORD_CODE },
-				nonce = HttpService:GenerateGUID(false),
-			}),
+			Headers = { ["Content-Type"] = "application/json", ["Origin"] = "https://discord.com" },
+			Body = HttpService:JSONEncode({ cmd = "INVITE_BROWSER", args = { code = DISCORD_CODE }, nonce = HttpService:GenerateGUID(false) }),
 		})
 	end
 	local copy = setclipboard or toclipboard or (Clipboard and Clipboard.set)
@@ -3113,8 +3034,6 @@ function Lib:BuildDiscord()
 	Registry._discordBuilt = true
 
 	local tab = Window:AddTab("Credits", "★")
-
-	-- Left column: Discord Community Banner + Leadership
 	local discSec = tab:AddSection("Discord Server", "Left")
 
 	local banner = make("Frame", { Size = udim2New(1, 0, 0, 96), BorderSizePixel = 0, LayoutOrder = nextOrder(discSec.Frame), Parent = discSec.Frame })
@@ -3122,7 +3041,7 @@ function Lib:BuildDiscord()
 	round(banner, 6)
 	local bst = outline(banner, "Stroke")
 	bst.Transparency = 0.45
-	local bGrad = make("UIGradient", {
+	make("UIGradient", {
 		Rotation = 25,
 		Color = ColorSequence.new(c(88, 101, 242), c(255, 255, 255)),
 		Transparency = NumberSequence.new({ kp(0, 0.72), kp(1, 0.94) }),
@@ -3139,51 +3058,22 @@ function Lib:BuildDiscord()
 	})
 	round(joinBtn, 5)
 	local jScale = make("UIScale", { Scale = 1, Parent = joinBtn })
-	joinBtn.MouseEnter:Connect(function()
-		tween(joinBtn, { BackgroundColor3 = c(105, 118, 255) })
-		tween(jScale, { Scale = 1.015 }, FAST)
-	end)
-	joinBtn.MouseLeave:Connect(function()
-		tween(joinBtn, { BackgroundColor3 = c(88, 101, 242) })
-		tween(jScale, { Scale = 1 }, FAST)
-	end)
+	joinBtn.MouseEnter:Connect(function() tween(joinBtn, { BackgroundColor3 = c(105, 118, 255) }); tween(jScale, { Scale = 1.015 }, FAST) end)
+	joinBtn.MouseLeave:Connect(function() tween(joinBtn, { BackgroundColor3 = c(88, 101, 242) }); tween(jScale, { Scale = 1 }, FAST) end)
 	joinBtn.MouseButton1Down:Connect(function() tween(jScale, { Scale = 0.97 }, MICRO) end)
 	joinBtn.MouseButton1Up:Connect(function() tween(jScale, { Scale = 1 }, SPRING) end)
-	joinBtn.MouseButton1Click:Connect(function()
-		ripple(banner)
-		joinDiscord(Window)
-	end)
+	joinBtn.MouseButton1Click:Connect(function() ripple(banner); joinDiscord(Window) end)
 	indexItem(discSec, banner, "discord server join " .. DISCORD_URL)
 
-	discSec:AddButton({
-		Name = "Copy Invite Link",
-		Desc = DISCORD_URL,
-		Callback = function() joinDiscord(Window) end,
-	})
+	discSec:AddButton({ Name = "Copy Invite Link", Desc = DISCORD_URL, Callback = function() joinDiscord(Window) end })
 
 	local leadSec = tab:AddSection("Leadership", "Left")
-	leadSec:AddProfile({
-		Username = CREDITS_DATA.Founder.Name,
-		Role = CREDITS_DATA.Founder.Role,
-		Badge = CREDITS_DATA.Founder.Badge,
-		Color = CREDITS_DATA.Founder.Color,
-	})
-	leadSec:AddProfile({
-		Username = CREDITS_DATA.CoFounder.Name,
-		Role = CREDITS_DATA.CoFounder.Role,
-		Badge = CREDITS_DATA.CoFounder.Badge,
-		Color = CREDITS_DATA.CoFounder.Color,
-	})
+	leadSec:AddProfile({ Username = CREDITS_DATA.Founder.Name, Role = CREDITS_DATA.Founder.Role, Badge = CREDITS_DATA.Founder.Badge, Color = CREDITS_DATA.Founder.Color })
+	leadSec:AddProfile({ Username = CREDITS_DATA.CoFounder.Name, Role = CREDITS_DATA.CoFounder.Role, Badge = CREDITS_DATA.CoFounder.Badge, Color = CREDITS_DATA.CoFounder.Color })
 
-	-- Right column: Testers + Hub Info
 	local testSec = tab:AddSection("Quality Assurance & Testers", "Right")
 	for _, tester in ipairs(CREDITS_DATA.Testers) do
-		testSec:AddProfile({
-			Username = tester.Name,
-			Role = tester.Role,
-			Badge = tester.Badge,
-			Color = tester.Color,
-		})
+		testSec:AddProfile({ Username = tester.Name, Role = tester.Role, Badge = tester.Badge, Color = tester.Color })
 	end
 
 	local infoSec = tab:AddSection("About S Hub", "Right")
