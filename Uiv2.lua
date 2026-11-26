@@ -575,28 +575,22 @@ end
 
 function Section:AddProfile(o)
 	o = o or {}
-	local username = o.Username or "Roblox"
+	local username = o.Username or "User"
 	local roleText = o.Role or "Contributor"
 	local badgeText = o.Badge or "TEAM"
 	local col = o.Color
 
-	local f = card(self.Frame, 52)
-	local bar = make("Frame", { Size = udim2New(0, 2.5, 1, -14), Position = udim2FromOffset(6, 7), BorderSizePixel = 0, Parent = f })
+	local f = card(self.Frame, 46)
+	local bar = make("Frame", { Size = udim2New(0, 2.5, 1, -14), Position = udim2FromOffset(7, 7), BorderSizePixel = 0, Parent = f })
 	pill(bar)
 	if col then bar.BackgroundColor3 = col else bind(bar, "BackgroundColor3", "Accent") end
 
-	local av = make("ImageLabel", { Size = udim2FromOffset(36, 36), Position = udim2FromOffset(14, 8), BorderSizePixel = 0, Parent = f })
-	bind(av, "BackgroundColor3", "Surface")
-	pill(av)
-	local avSt = outline(av, "Stroke", 1.2)
-	if col then avSt.Color = col end
-
-	local nameL = label(f, "@" .. username, { Font = BOLD, Size = 12, Box = udim2New(1, -135, 0, 16), Pos = udim2FromOffset(58, 9) })
+	local nameL = label(f, "@" .. username, { Font = BOLD, Size = 12, Box = udim2New(1, -100, 0, 16), Pos = udim2FromOffset(16, 7) })
 	nameL.TextTruncate = Enum.TextTruncate.AtEnd
-	local roleL = label(f, roleText, { Size = 11, Role = "SubText", Box = udim2New(1, -66, 0, 14), Pos = udim2FromOffset(58, 26) })
+	local roleL = label(f, roleText, { Size = 11, Role = "SubText", Box = udim2New(1, -24, 0, 14), Pos = udim2FromOffset(16, 24) })
 	roleL.TextTruncate = Enum.TextTruncate.AtEnd
 
-	local badge = make("Frame", { AutomaticSize = Enum.AutomaticSize.X, Size = udim2FromOffset(0, 18), AnchorPoint = Vector2.new(1, 0), Position = udim2New(1, -10, 0, 8), BorderSizePixel = 0, BackgroundTransparency = 0.84, Parent = f })
+	local badge = make("Frame", { AutomaticSize = Enum.AutomaticSize.X, Size = udim2FromOffset(0, 18), AnchorPoint = Vector2.new(1, 0), Position = udim2New(1, -10, 0, 7), BorderSizePixel = 0, BackgroundTransparency = 0.84, Parent = f })
 	if col then badge.BackgroundColor3 = col else bind(badge, "BackgroundColor3", "Accent") end
 	round(badge, 4)
 	make("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), Parent = badge })
@@ -610,15 +604,7 @@ function Section:AddProfile(o)
 		local copy = setclipboard or toclipboard or (Clipboard and Clipboard.set)
 		if typeof(copy) == "function" then
 			pcall(copy, username)
-			if Registry.window then Registry.window:Notify("Copied", "Copied @" .. username .. " to clipboard", 2.5, "Success") end
-		end
-	end)
-
-	task.spawn(function()
-		local ok, uid = pcall(Players.GetUserIdFromNameAsync, Players, username)
-		if ok and uid then
-			local tok, img = pcall(Players.GetUserThumbnailAsync, Players, uid, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
-			if tok and av.Parent then av.Image = img end
+			if Registry.window then Registry.window:Notify("Discord", "Copied Discord username @" .. username .. " to clipboard", 2.5, "Success") end
 		end
 	end)
 
@@ -3203,7 +3189,7 @@ function Lib:BuildDiscord()
 	local infoSec = tab:AddSection("About S Hub", "Right")
 	infoSec:AddCard({
 		Title = "S Hub  ·  v" .. Lib.Version,
-		Body = ("Device Mode: %s\nClick any team profile card to copy their username."):format(IsMobile and "Mobile (Touch Optimized)" or "Desktop (Keyboard & Mouse)"),
+		Body = ("Device Mode: %s\nClick any team profile card to copy their Discord username."):format(IsMobile and "Mobile (Touch Optimized)" or "Desktop (Keyboard & Mouse)"),
 	})
 end
 
